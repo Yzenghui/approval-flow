@@ -1,0 +1,75 @@
+# =============================================
+# 通用规则（所有平台/工具）
+# =============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+*.swp
+*.swo
+*.tmp
+*.bak
+*.log
+.history/
+
+# =============================================
+# IDE（全局）
+# =============================================
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+.springBeans
+.sts4-cache
+.nbproject/private/
+/nbbuild/
+/nbdist/
+/.nb-gradle/
+
+# =============================================
+# 前端 (frontend/)
+# =============================================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.cache/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/.env.local
+frontend/.env.*.local
+
+# =============================================
+# 后端 (backend/)
+# =============================================
+# 编译产物
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# 日志
+backend/logs/
+backend/*.log
+
+# 敏感配置
+backend/src/main/resources/application-local.yml
+backend/src/main/resources/application-dev.yml
+backend/*-local.yml
+backend/*-dev.yml
+
+# 保留模板示例
+!backend/src/main/resources/application.yml
+!backend/src/main/resources/application-template.yml
+
+# =============================================
+# 项目特定
+# =============================================
+*.md
+!README.md

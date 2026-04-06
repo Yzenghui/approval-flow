@@ -1,0 +1,44 @@
+### 登录 - 正确密码
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+### 登录 - 错误密码
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "wrong"
+}
+
+### 登录 - 用户不存在
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "notexist",
+  "password": "123456"
+}
+
+### 登录 - 空用户名
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "",
+  "password": "123456"
+}
+
+### 登录 - 空密码
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": ""
+}

@@ -1,0 +1,69 @@
+package com.approval.backend.service.impl;
+
+import cn.dev33.satoken.secure.BCrypt;
+import cn.dev33.satoken.stp.StpUtil;
+import com.approval.backend.common.BusinessException;
+import com.approval.backend.dto.request.LoginRequest;
+import com.approval.backend.dto.response.LoginResponse;
+import com.approval.backend.entity.Role;
+import com.approval.backend.entity.User;
+import com.approval.backend.mapper.RoleMapper;
+import com.approval.backend.mapper.UserMapper;
+import com.approval.backend.service.AuthService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.springframework.stereotype.Service;
+
+/**
+ * 认证服务的具体实现类
+ */
+@Service
+public class AuthServiceImpl implements AuthService {
+    private final UserMapper userMapper;
+    private final RoleMapper roleMapper;
+
+    public AuthServiceImpl(UserMapper userMapper, RoleMapper roleMapper) {
+        this.userMapper = userMapper;
+        this.roleMapper = roleMapper;
+    }
+
+    /**
+     * 用户登录验证
+     *
+     * @param loginRequest 登录请求数据传输对象
+     * @return 登录成功返回用户信息
+     * @throws BusinessException 用户名或密码错误时抛出401，账号禁用时抛出403
+     */
+    @Override
+    public LoginResponse login(LoginRequest loginRequest) {
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getUsername, loginRequest.getUsername())
+        );
+
+        if (user == null || !BCrypt.checkpw(loginRequest.getPassword(), user.getPassword())) {
+            throw new BusinessException(401, "用户名或密码错误");
+        }
+
+        if (user.getStatus() != null && user.getStatus() != 1) {
+            throw new BusinessException(403, "账号已被禁用，请联系管理员");
+        }
+
+        StpUtil.login(user.getId());
+        String token = StpUtil.getTokenValue();
+        LoginResponse response = new LoginResponse();
+        response.setToken(token);
+
+        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo();
+        userInfo.setId(user.getId());
+        userInfo.setUsername(user.getUsername());
+        userInfo.setName(user.getName());
+
+        Long roleId = user.getRoleId();
+        Role role = roleMapper.selectById(roleId);
+        userInfo.setRoleCode(role.getCode());
+        userInfo.setRoleName(role.getName());
+
+        response.setUserInfo(userInfo);
+
+        return response;
+    }
+}

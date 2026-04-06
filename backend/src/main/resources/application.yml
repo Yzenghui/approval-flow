@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: approval-flow-backend
+
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/approval_flow?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Redis 配置
+  # data:
+  #   redis:
+  #     host: localhost
+  #     port: 6379
+  #     password:
+  #     database: 0
+
+# Sa-Token 配置
+sa-token:
+  token-name: Authorization        # 前端请求头携带的 Token 字段名
+  timeout: 86400                   # Token 有效期（秒），86400 即 24 小时
+  active-timeout: -1               # 最低活跃频率，-1 表示不限制（不会因不操作而提前失效）
+  is-concurrent: true              # 是否允许多地同时登录（true 允许同账号多设备在线）
+  is-share: true                   # 是否共享 Token（true 表示多设备共用一个 Token，一处登出全部下线）
+  token-style: uuid                # Token 生成风格，使用标准 UUID
+  is-log: false                    # 是否开启框架日志，生产环境建议关闭
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml    # XML 文件位置
+  global-config:
+    db-config:
+      id-type: auto                               # 主键自增
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印 SQL
+    map-underscore-to-camel-case: true            # 自动驼峰映射
+
+# 日志配置
+logging:
+  level:
+    com.approval: debug

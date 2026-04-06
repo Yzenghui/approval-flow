@@ -42,3 +42,162 @@ Content-Type: application/json
   "username": "admin",
   "password": ""
 }
+
+### 注册 - 正常情况
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "test@example.com"
+}
+
+### 注册 - 用户已存在
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "test1@example.com"
+}
+
+### 注册 - 用户名为空
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "test1@example.com"
+}
+
+### 注册 - 用户名长度不足
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+ {
+  "username": "tu",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "test1@example.com"
+}
+
+### 注册 - 用户名以数字开头
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "123user",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "test1@example.com"
+}
+
+### 注册 - 用户名包含特殊字符
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "test@user",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "test1@example.com"
+}
+
+### 注册 - 密码为空
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+ {
+  "username": "testuser2",
+  "password": "",
+  "name": "测试用户",
+  "email": "test1@example.com"
+}
+
+### 注册 - 密码长度不足
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser3",
+  "password": "ab1",
+  "name": "测试用户",
+  "email": "test1@example.com"
+}
+
+### 注册 - 密码缺少数字
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser4",
+  "password": "abcdef",
+  "name": "测试用户",
+  "email": "test1@example.com"
+}
+
+### 注册 - 姓名为空
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser5",
+  "password": "abc123",
+  "name": "",
+  "email": "test1@example.com"
+}
+
+### 注册 - 姓名长度不足
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+ {
+  "username": "testuser6",
+  "password": "abc123",
+  "name": "t",
+  "email": "test1@example.com"
+}
+
+### 注册 - 邮箱为空
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser7",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": ""
+}
+
+### 注册 - 邮箱格式错误
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser8",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "invalid-email"
+}
+
+### 注册 - 邮箱已存在
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser9",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "test@example.com"
+}
+
+
+
+
+

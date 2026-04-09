@@ -69,6 +69,8 @@ public class UserServiceImpl implements UserService {
             wrapper.eq(User::getStatus, status);
         }
 
+        wrapper.orderByDesc(User::getCreateTime);
+
         Page<User> page = new Page<>(pageNum, pageSize);
         Page<User> userPage = userMapper.selectPage(page, wrapper);
 

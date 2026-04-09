@@ -34,7 +34,7 @@ public class UserController {
      */
     @GetMapping("/users")
     @SaCheckLogin
-    @SaCheckRole("admin")
+    @SaCheckRole("ADMIN")
     public Result<?> listUsers(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,

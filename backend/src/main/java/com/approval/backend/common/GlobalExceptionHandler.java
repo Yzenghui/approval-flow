@@ -1,6 +1,7 @@
 package com.approval.backend.common;
 
 import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotRoleException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -23,6 +24,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotLoginException.class)
     public Result<Void> handleNotLoginException() {
         return Result.error(401, "未登录或登录已过期");
+    }
+
+    /**
+     * Sa-Token 角色校验失败（无权限）
+     */
+    @ExceptionHandler(NotRoleException.class)
+    public Result<Void> handleNotRoleException(NotRoleException e) {
+        return Result.error(403, "权限不足，无法访问");
     }
 
     /**

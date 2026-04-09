@@ -197,7 +197,78 @@ Content-Type: application/json
   "email": "test@example.com"
 }
 
+### 登录获取 Token（admin）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
 
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 用户列表 - 默认分页（需登录）
+GET http://localhost:8080/api/admin/users
+Authorization: {{admin_token}}
+
+### 用户列表 - 未登录（应返回 401）
+GET http://localhost:8080/api/admin/users
+
+### 登录获取普通用户 Token（zhangsan）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 用户列表 - 非管理员访问（应返回 403）
+GET http://localhost:8080/api/admin/users
+Authorization: {{user_token}}
+
+### 用户列表 - 第2页，每页2条
+GET http://localhost:8080/api/admin/users?pageNum=2&pageSize=2
+Authorization: {{admin_token}}
+
+### 用户列表 - 关键词搜索"张"
+GET http://localhost:8080/api/admin/users?keyword=张
+Authorization: {{admin_token}}
+
+### 用户列表 - 关键词搜索邮箱"example"
+GET http://localhost:8080/api/admin/users?keyword=example
+Authorization: {{admin_token}}
+
+### 用户列表 - 筛选启用状态(status=1)
+GET http://localhost:8080/api/admin/users?status=1
+Authorization: {{admin_token}}
+
+### 用户列表 - 筛选禁用状态(status=0)
+GET http://localhost:8080/api/admin/users?status=0
+Authorization: {{admin_token}}
+
+### 用户列表 - 组合条件：关键词+状态
+GET http://localhost:8080/api/admin/users?keyword=张&status=1
+Authorization: {{admin_token}}
+
+### 用户列表 - 无匹配关键词
+GET http://localhost:8080/api/admin/users?keyword=不存在的用户
+Authorization: {{admin_token}}
+
+### 用户列表 - 页码为0（应自动修正为1）
+GET http://localhost:8080/api/admin/users?pageNum=0&pageSize=10
+Authorization: {{admin_token}}
+
+### 用户列表 - 每页100条（边界测试）
+GET http://localhost:8080/api/admin/users?pageNum=1&pageSize=100
+Authorization: {{admin_token}}
+
+### 用户列表 - 每页超过100条（应限制为100）
+GET http://localhost:8080/api/admin/users?pageNum=1&pageSize=200
+Authorization: {{admin_token}}
 
 
 

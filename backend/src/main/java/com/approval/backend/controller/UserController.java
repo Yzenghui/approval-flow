@@ -4,12 +4,12 @@ import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
+import com.approval.backend.dto.request.CreateUserRequest;
+import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.service.UserService;
 import com.approval.backend.vo.UserVO;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 用户控制器
@@ -54,5 +54,13 @@ public class UserController {
 
         PageResult<UserVO> result = userService.listUsers(pageNum, pageSize, keyword, roleCode, status);
         return Result.success(result);
+    }
+
+    @PostMapping("/users")
+    @SaCheckLogin
+    @SaCheckRole("ADMIN")
+    public Result<?> createUser(@Valid @RequestBody CreateUserRequest createUserRequest){
+        CreateUserResponse response = userService.createUser(createUserRequest);
+        return Result.success(response);
     }
 }

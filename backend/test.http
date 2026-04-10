@@ -43,6 +43,8 @@ Content-Type: application/json
   "password": ""
 }
 
+
+
 ### 注册 - 正常情况
 POST http://localhost:8080/api/auth/register
 Content-Type: application/json
@@ -197,6 +199,8 @@ Content-Type: application/json
   "email": "test@example.com"
 }
 
+
+
 ### 登录获取 Token（admin）
 POST http://localhost:8080/api/auth/login
 Content-Type: application/json
@@ -270,5 +274,147 @@ Authorization: {{admin_token}}
 GET http://localhost:8080/api/admin/users?pageNum=1&pageSize=200
 Authorization: {{admin_token}}
 
+
+
+### 登录获取 Token（admin）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 新增用户 - 正常情况
+POST http://localhost:8080/api/admin/users
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "username": "newuser",
+  "password": "abc123",
+  "name": "新用户",
+  "email": "newuser@example.com",
+  "roleCode": "STAFF"
+}
+
+### 新增用户 - 用户名已存在
+POST http://localhost:8080/api/admin/users
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "username": "admin",
+  "password": "abc123",
+  "name": "重复用户",
+  "email": "dup@example.com",
+  "roleCode": "STAFF"
+}
+
+### 新增用户 - 邮箱已存在
+POST http://localhost:8080/api/admin/users
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "username": "newuser2",
+  "password": "abc123",
+  "name": "重复邮箱",
+  "email": "admin@example.com",
+  "roleCode": "STAFF"
+}
+
+### 新增用户 - 无效角色编码
+POST http://localhost:8080/api/admin/users
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "username": "testrole",
+  "password": "abc123",
+  "name": "测试角色",
+  "email": "testrole@example.com",
+  "roleCode": "INVALID_ROLE"
+}
+
+### 新增用户 - 用户名长度不足
+POST http://localhost:8080/api/admin/users
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "username": "ab",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "short@example.com",
+  "roleCode": "STAFF"
+}
+
+### 新增用户 - 用户名以数字开头
+POST http://localhost:8080/api/admin/users
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "username": "123user",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "digit@example.com",
+  "roleCode": "STAFF"
+}
+
+### 新增用户 - 密码长度不足
+POST http://localhost:8080/api/admin/users
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "username": "shortpass",
+  "password": "ab1",
+  "name": "测试用户",
+  "email": "shortpass@example.com",
+  "roleCode": "STAFF"
+}
+
+### 新增用户 - 密码缺少数字
+POST http://localhost:8080/api/admin/users
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "username": "noDigitPass",
+  "password": "abcdef",
+  "name": "测试用户",
+  "email": "nodigit@example.com",
+  "roleCode": "STAFF"
+}
+
+### 新增用户 - 姓名长度不足
+POST http://localhost:8080/api/admin/users
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "username": "shortname",
+  "password": "abc123",
+  "name": "张",
+  "email": "shortname@example.com",
+  "roleCode": "STAFF"
+}
+
+### 新增用户 - 邮箱格式错误
+POST http://localhost:8080/api/admin/users
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "username": "bademail",
+  "password": "abc123",
+  "name": "测试用户",
+  "email": "not-an-email",
+  "roleCode": "STAFF"
+}
 
 

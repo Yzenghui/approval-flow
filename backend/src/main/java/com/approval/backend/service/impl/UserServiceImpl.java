@@ -1,6 +1,10 @@
 package com.approval.backend.service.impl;
 
+import cn.dev33.satoken.secure.BCrypt;
+import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.dto.request.CreateUserRequest;
+import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.entity.Role;
 import com.approval.backend.entity.User;
 import com.approval.backend.mapper.RoleMapper;
@@ -33,11 +37,12 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 分页查询用户列表
-     * @param pageNum 页码
+     *
+     * @param pageNum  页码
      * @param pageSize 每页条数
-     * @param keyword 搜索关键词（用户名、姓名、邮箱）
+     * @param keyword  搜索关键词（用户名、姓名、邮箱）
      * @param roleCode 角色编码筛选
-     * @param status 状态筛选
+     * @param status   状态筛选
      * @return 分页结果
      */
     @Override
@@ -117,5 +122,53 @@ public class UserServiceImpl implements UserService {
         result.setTotal(userPage.getTotal());
         result.setRecords(records);
         return result;
+    }
+
+    /**
+     * 创建用户
+     * @param createUserRequest 创建用户请求数据传输对象
+     * @return 创建成功返回用户信息
+     */
+    @Override
+    public CreateUserResponse createUser(CreateUserRequest createUserRequest) {
+        User existingUser = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getUsername, createUserRequest.getUsername())
+        );
+        if (existingUser != null) {
+            throw new BusinessException(400, "用户名已存在");
+        }
+
+        User existingEmail = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getEmail, createUserRequest.getEmail())
+        );
+        if (existingEmail != null) {
+            throw new BusinessException(400, "邮箱已存在");
+        }
+
+        User user = new User();
+        user.setUsername(createUserRequest.getUsername());
+        user.setPassword(BCrypt.hashpw(createUserRequest.getPassword(), BCrypt.gensalt()));
+        user.setName(createUserRequest.getName());
+        user.setEmail(createUserRequest.getEmail());
+
+        Role role = roleMapper.selectOne(
+                new LambdaQueryWrapper<Role>().eq(Role::getCode, createUserRequest.getRoleCode())
+        );
+        if (role == null) {
+            throw new BusinessException(400, "角色编码无效");
+        }
+        user.setRoleId(role.getId());
+
+        user.setManagerId(null);
+        user.setStatus(1);
+
+        userMapper.insert(user);
+
+        CreateUserResponse response = new CreateUserResponse();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setName(user.getName());
+
+        return response;
     }
 }

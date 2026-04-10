@@ -1,6 +1,8 @@
 package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
+import com.approval.backend.dto.request.CreateUserRequest;
+import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.vo.UserVO;
 
 /**
@@ -17,4 +19,11 @@ public interface UserService {
      * @return 分页结果
      */
     PageResult<UserVO> listUsers(Integer pageNum, Integer pageSize, String keyword, String roleCode, Integer status);
+
+    /**
+     * 创建用户
+     * @param createUserRequest 创建用户请求数据传输对象
+     * @return 创建成功返回用户信息
+     */
+    CreateUserResponse createUser(CreateUserRequest createUserRequest);
 }

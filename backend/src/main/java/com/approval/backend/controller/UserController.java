@@ -5,6 +5,7 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
 import com.approval.backend.dto.request.CreateUserRequest;
+import com.approval.backend.dto.request.ResetPasswordRequest;
 import com.approval.backend.dto.request.UpdateUserRequest;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.service.UserService;
@@ -73,7 +74,7 @@ public class UserController {
     /**
      * 更新用户
      *
-     * @param id
+     * @param id                用户ID
      * @param updateUserRequest 更新用户请求数据传输对象
      */
     @PatchMapping("/users/{id}")
@@ -81,6 +82,20 @@ public class UserController {
     @SaCheckRole("ADMIN")
     public Result<?> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest updateUserRequest) {
         userService.updateUser(id, updateUserRequest);
+        return Result.success(null);
+    }
+
+    /**
+     * 重置密码
+     *
+     * @param id                   用户ID
+     * @param resetPasswordRequest 重置密码请求数据传输对象
+     */
+    @PutMapping("/users/{id}/password")
+    @SaCheckLogin
+    @SaCheckRole("ADMIN")
+    public Result<?> resetPassword(@PathVariable Long id, @Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+        userService.resetPassword(id, resetPasswordRequest);
         return Result.success(null);
     }
 }

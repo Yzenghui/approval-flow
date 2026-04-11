@@ -2,6 +2,7 @@ package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.CreateUserRequest;
+import com.approval.backend.dto.request.ResetPasswordRequest;
 import com.approval.backend.dto.request.UpdateUserRequest;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.vo.UserVO;
@@ -34,4 +35,11 @@ public interface UserService {
      * @param updateUserRequest 更新用户请求数据传输对象
      */
     void updateUser(Long id, UpdateUserRequest updateUserRequest);
+
+    /**
+     * 重置用户密码
+     * @param id 用户ID
+     * @param request 重置密码请求数据传输对象
+     */
+    void resetPassword(Long id, ResetPasswordRequest request);
 }

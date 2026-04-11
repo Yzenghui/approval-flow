@@ -523,3 +523,60 @@ Authorization: {{admin_token}}
   "status": 2
 }
 
+
+
+### 登录获取 Token（admin）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 重置密码 - 正常情况
+PUT http://localhost:8080/api/admin/users/6/password
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "password": "newPass123"
+}
+
+### 重置密码 - 用户不存在
+PUT http://localhost:8080/api/admin/users/999/password
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "password": "newPass123"
+}
+
+### 重置密码 - 密码长度不足
+PUT http://localhost:8080/api/admin/users/6/password
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "password": "ab1"
+}
+
+### 重置密码 - 密码缺少数字
+PUT http://localhost:8080/api/admin/users/6/password
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "password": "abcdef"
+}
+
+### 验证新密码登录
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "newPass123"
+}

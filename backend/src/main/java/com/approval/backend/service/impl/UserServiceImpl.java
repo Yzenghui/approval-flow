@@ -4,6 +4,7 @@ import cn.dev33.satoken.secure.BCrypt;
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.CreateUserRequest;
+import com.approval.backend.dto.request.ResetPasswordRequest;
 import com.approval.backend.dto.request.UpdateUserRequest;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.entity.Role;
@@ -210,4 +211,21 @@ public class UserServiceImpl implements UserService {
 
         userMapper.updateById(user);
     }
+
+    /**
+     * 重置密码
+     * @param id 用户ID
+     * @param resetPasswordRequest 重置密码请求数据传输对象
+     */
+    @Override
+    public void resetPassword(Long id, ResetPasswordRequest resetPasswordRequest) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            throw new BusinessException(400, "用户不存在");
+        }
+
+        user.setPassword(BCrypt.hashpw(resetPasswordRequest.getPassword(), BCrypt.gensalt()));
+        userMapper.updateById(user);
+    }
+
 }

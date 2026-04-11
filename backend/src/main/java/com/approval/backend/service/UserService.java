@@ -2,6 +2,7 @@ package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.CreateUserRequest;
+import com.approval.backend.dto.request.UpdateUserRequest;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.vo.UserVO;
 
@@ -26,4 +27,11 @@ public interface UserService {
      * @return 创建成功返回用户信息
      */
     CreateUserResponse createUser(CreateUserRequest createUserRequest);
+
+    /**
+     * 更新用户
+     * @param id 用户ID
+     * @param updateUserRequest 更新用户请求数据传输对象
+     */
+    void updateUser(Long id, UpdateUserRequest updateUserRequest);
 }

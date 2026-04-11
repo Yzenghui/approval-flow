@@ -4,6 +4,7 @@ import cn.dev33.satoken.secure.BCrypt;
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.CreateUserRequest;
+import com.approval.backend.dto.request.UpdateUserRequest;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.entity.Role;
 import com.approval.backend.entity.User;
@@ -126,6 +127,7 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 创建用户
+     *
      * @param createUserRequest 创建用户请求数据传输对象
      * @return 创建成功返回用户信息
      */
@@ -170,5 +172,42 @@ public class UserServiceImpl implements UserService {
         response.setName(user.getName());
 
         return response;
+    }
+
+    /**
+     *
+     * @param id 用户ID
+     * @param updateUserRequest 更新用户请求数据传输对象
+     */
+    @Override
+    public void updateUser(Long id, UpdateUserRequest updateUserRequest) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            throw new BusinessException(400, "用户不存在");
+        }
+
+        User existingEmail = userMapper.selectOne(
+                new LambdaQueryWrapper<User>()
+                        .eq(User::getEmail, updateUserRequest.getEmail())
+                        .ne(User::getId, id)
+        );
+        if (existingEmail != null) {
+            throw new BusinessException(400, "邮箱已存在");
+        }
+
+        Role role = roleMapper.selectOne(
+                new LambdaQueryWrapper<Role>().eq(Role::getCode, updateUserRequest.getRoleCode())
+        );
+        if (role == null) {
+            throw new BusinessException(400, "角色编码无效");
+        }
+        Long roleId = role.getId();
+
+        user.setName(updateUserRequest.getName());
+        user.setEmail(updateUserRequest.getEmail());
+        user.setRoleId(roleId);
+        user.setStatus(updateUserRequest.getStatus());
+
+        userMapper.updateById(user);
     }
 }

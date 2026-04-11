@@ -5,6 +5,7 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
 import com.approval.backend.dto.request.CreateUserRequest;
+import com.approval.backend.dto.request.UpdateUserRequest;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.service.UserService;
 import com.approval.backend.vo.UserVO;
@@ -24,12 +25,11 @@ public class UserController {
     }
 
     /**
-     *
-     * @param pageNum 页码
+     * @param pageNum  页码
      * @param pageSize 每页条数
-     * @param keyword 搜索关键词（用户名、姓名、邮箱）
+     * @param keyword  搜索关键词（用户名、姓名、邮箱）
      * @param roleCode 角色编码筛选
-     * @param status 状态筛选
+     * @param status   状态筛选
      * @return 分页结果
      */
     @GetMapping("/users")
@@ -56,11 +56,31 @@ public class UserController {
         return Result.success(result);
     }
 
+    /**
+     * 创建用户
+     *
+     * @param createUserRequest 创建用户请求数据传输对象
+     * @return 创建成功返回用户信息
+     */
     @PostMapping("/users")
     @SaCheckLogin
     @SaCheckRole("ADMIN")
-    public Result<?> createUser(@Valid @RequestBody CreateUserRequest createUserRequest){
+    public Result<?> createUser(@Valid @RequestBody CreateUserRequest createUserRequest) {
         CreateUserResponse response = userService.createUser(createUserRequest);
         return Result.success(response);
+    }
+
+    /**
+     * 更新用户
+     *
+     * @param id
+     * @param updateUserRequest 更新用户请求数据传输对象
+     */
+    @PatchMapping("/users/{id}")
+    @SaCheckLogin
+    @SaCheckRole("ADMIN")
+    public Result<?> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest updateUserRequest) {
+        userService.updateUser(id, updateUserRequest);
+        return Result.success(null);
     }
 }

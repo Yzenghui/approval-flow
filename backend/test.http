@@ -418,3 +418,108 @@ Authorization: {{admin_token}}
 }
 
 
+
+### 登录获取 Token（admin）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 编辑用户 - 正常情况
+PATCH http://localhost:8080/api/admin/users/6
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试用户修改",
+  "email": "test_updated@example.com",
+  "roleCode": "MANAGER",
+  "status": 1
+}
+
+### 编辑用户 - 用户不存在
+PATCH http://localhost:8080/api/admin/users/999
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试用户",
+  "email": "test@example.com",
+  "roleCode": "STAFF",
+  "status": 1
+}
+
+### 编辑用户 - 邮箱已被其他用户使用
+PATCH http://localhost:8080/api/admin/users/6
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试用户",
+  "email": "admin@example.com",
+  "roleCode": "STAFF",
+  "status": 1
+}
+
+### 编辑用户 - 无效角色编码
+PATCH http://localhost:8080/api/admin/users/6
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试用户",
+  "email": "test@example.com",
+  "roleCode": "INVALID_ROLE",
+  "status": 1
+}
+
+### 编辑用户 - 禁用用户(status=0)
+PATCH http://localhost:8080/api/admin/users/6
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试用户",
+  "email": "test@example.com",
+  "roleCode": "STAFF",
+  "status": 0
+}
+
+### 编辑用户 - 缺少必填字段
+PATCH http://localhost:8080/api/admin/users/6
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试用户"
+}
+
+### 编辑用户 - 邮箱格式错误
+PATCH http://localhost:8080/api/admin/users/6
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试用户",
+  "email": "invalid-email",
+  "roleCode": "STAFF",
+  "status": 1
+}
+
+### 编辑用户 - 状态值非法
+PATCH http://localhost:8080/api/admin/users/6
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试用户",
+  "email": "test@example.com",
+  "roleCode": "STAFF",
+  "status": 2
+}
+

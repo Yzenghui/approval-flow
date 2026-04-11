@@ -16,6 +16,7 @@ public class Role {
 
     private String code;
     private String name;
+    private Integer level;
     private Integer status;
 
     @TableField(fill = FieldFill.INSERT)

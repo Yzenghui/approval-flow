@@ -6,6 +6,7 @@ import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
 import com.approval.backend.dto.request.CreateUserRequest;
 import com.approval.backend.dto.request.ResetPasswordRequest;
+import com.approval.backend.dto.request.UpdateManagerRequest;
 import com.approval.backend.dto.request.UpdateUserRequest;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.service.UserService;
@@ -96,6 +97,19 @@ public class UserController {
     @SaCheckRole("ADMIN")
     public Result<?> resetPassword(@PathVariable Long id, @Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
         userService.resetPassword(id, resetPasswordRequest);
+        return Result.success(null);
+    }
+
+    /**
+     * 修改上级
+     * @param id 用户ID
+     * @param updateManagerRequest 修改上级请求数据传输对象
+     */
+    @PutMapping("/users/{id}/manager")
+    @SaCheckLogin
+    @SaCheckRole("ADMIN")
+    public Result<?> updateManager(@PathVariable Long id, @Valid @RequestBody UpdateManagerRequest updateManagerRequest) {
+        userService.updateManager(id, updateManagerRequest);
         return Result.success(null);
     }
 }

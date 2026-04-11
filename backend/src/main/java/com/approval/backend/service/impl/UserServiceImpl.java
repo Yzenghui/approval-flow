@@ -5,6 +5,7 @@ import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.CreateUserRequest;
 import com.approval.backend.dto.request.ResetPasswordRequest;
+import com.approval.backend.dto.request.UpdateManagerRequest;
 import com.approval.backend.dto.request.UpdateUserRequest;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.entity.Role;
@@ -14,6 +15,7 @@ import com.approval.backend.mapper.UserMapper;
 import com.approval.backend.service.UserService;
 import com.approval.backend.vo.UserVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -176,8 +178,9 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 更新用户
      *
-     * @param id 用户ID
+     * @param id                用户ID
      * @param updateUserRequest 更新用户请求数据传输对象
      */
     @Override
@@ -214,7 +217,8 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 重置密码
-     * @param id 用户ID
+     *
+     * @param id                   用户ID
      * @param resetPasswordRequest 重置密码请求数据传输对象
      */
     @Override
@@ -228,4 +232,45 @@ public class UserServiceImpl implements UserService {
         userMapper.updateById(user);
     }
 
+    /**
+     * 修改上级
+     *
+     * @param id                   用户ID
+     * @param updateManagerRequest 修改上级请求数据传输对象
+     */
+    @Override
+    public void updateManager(Long id, UpdateManagerRequest updateManagerRequest) {
+        User currentUser = userMapper.selectById(id);
+        if (currentUser == null) {
+            throw new BusinessException(400, "用户不存在");
+        }
+
+        if (updateManagerRequest.getManagerId() == null) {
+            LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<User>()
+                    .eq(User::getId, id)
+                    .set(User::getManagerId, null);
+            userMapper.update(null, wrapper);
+            return;
+        }
+
+        User managerUser = userMapper.selectById(updateManagerRequest.getManagerId());
+        if (managerUser == null) {
+            throw new BusinessException(400, "上级用户不存在");
+        }
+
+        if (currentUser.getId().equals(updateManagerRequest.getManagerId())) {
+            throw new BusinessException(400, "不能设置自己为上级");
+        }
+
+        Role currentRole = roleMapper.selectById(currentUser.getRoleId());
+        Role targetRole = roleMapper.selectById(managerUser.getRoleId());
+        int currentLevel = currentRole.getLevel();
+        int targetLevel = targetRole.getLevel();
+        if (currentLevel >= targetLevel) {
+            throw new BusinessException(400, "上级角色等级必须高于当前用户");
+        }
+
+        currentUser.setManagerId(updateManagerRequest.getManagerId());
+        userMapper.updateById(currentUser);
+    }
 }

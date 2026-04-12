@@ -3,6 +3,7 @@ package com.approval.backend.controller;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.Result;
+import com.approval.backend.dto.request.UpdatePasswordRequest;
 import com.approval.backend.dto.request.UpdateProfileRequest;
 import com.approval.backend.service.UserService;
 import com.approval.backend.vo.UserVO;
@@ -44,6 +45,18 @@ public class UserProfileController {
     @SaCheckLogin
     public Result<?> updateProfile(@RequestBody @Valid UpdateProfileRequest updateProfileRequest) {
         userService.updateProfile(StpUtil.getLoginIdAsLong(), updateProfileRequest);
+        return Result.success(null);
+    }
+
+    /**
+     * 修改个人密码
+     *
+     * @param updatePasswordRequest 修改个人密码请求数据传输对象
+     */
+    @PutMapping("/password")
+    @SaCheckLogin
+    public Result<?> updatePassword(@RequestBody @Valid UpdatePasswordRequest updatePasswordRequest) {
+        userService.updatePassword(StpUtil.getLoginIdAsLong(), updatePasswordRequest);
         return Result.success(null);
     }
 

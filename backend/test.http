@@ -716,3 +716,74 @@ Authorization: {{user_token}}
 {
   "email": ""
 }
+
+
+
+### 登录获取 Token（lisi）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "lisi",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 修改个人密码 - 正常情况
+PUT http://localhost:8080/api/user/password
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "oldPassword": "123456",
+  "newPassword": "newPass123"
+}
+
+### 修改个人密码 - 原密码错误
+PUT http://localhost:8080/api/user/password
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "oldPassword": "wrongPassword",
+  "newPassword": "newPass123"
+}
+
+### 修改个人密码 - 新密码与原密码相同
+PUT http://localhost:8080/api/user/password
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "oldPassword": "newPass123",
+  "newPassword": "newPass123"
+}
+
+### 修改个人密码 - 新密码格式错误
+PUT http://localhost:8080/api/user/password
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "oldPassword": "123456",
+  "newPassword": "abc"
+}
+
+### 修改个人密码 - 未登录（应返回 401）
+PUT http://localhost:8080/api/user/password
+Content-Type: application/json
+
+{
+  "oldPassword": "123456",
+  "newPassword": "newPass123"
+}
+
+### 验证新密码登录
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "lisi",
+  "password": "newPass123"
+}

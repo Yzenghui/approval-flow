@@ -61,4 +61,11 @@ public interface UserService {
      * @param updateProfileRequest 修改个人信息请求数据传输对象
      */
     void updateProfile(Long id, UpdateProfileRequest updateProfileRequest);
+
+    /**
+     * 修改个人密码
+     * @param id 用户ID
+     * @param updatePasswordRequest 修改个人密码请求数据传输对象
+     */
+    void updatePassword(Long id,UpdatePasswordRequest updatePasswordRequest);
 }

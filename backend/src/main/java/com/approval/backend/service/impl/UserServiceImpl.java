@@ -299,4 +299,31 @@ public class UserServiceImpl implements UserService {
 
         userMapper.update(null, new LambdaUpdateWrapper<User>().eq(User::getId, id).set(User::getEmail, updateProfileRequest.getEmail()));
     }
+
+    /**
+     * 修改个人密码
+     *
+     * @param id                    用户ID
+     * @param updatePasswordRequest 修改个人密码请求数据传输对象
+     */
+    @Override
+    public void updatePassword(Long id, UpdatePasswordRequest updatePasswordRequest) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            throw new BusinessException(400, "用户不存在");
+        }
+
+        if (!BCrypt.checkpw(updatePasswordRequest.getOldPassword(), user.getPassword())) {
+            throw new BusinessException(400, "原密码错误");
+        }
+
+        if (updatePasswordRequest.getNewPassword().equals(updatePasswordRequest.getOldPassword())) {
+            throw new BusinessException(400, "新密码不能与原密码相同");
+        }
+
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, id)
+                .set(User::getPassword, BCrypt.hashpw(updatePasswordRequest.getNewPassword(), BCrypt.gensalt()))
+        );
+    }
 }

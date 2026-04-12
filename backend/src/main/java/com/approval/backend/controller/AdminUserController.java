@@ -15,14 +15,16 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 用户控制器
+ * 管理员用户管理接口
+ * 提供用户列表、新增、编辑、重置密码、修改上级等功能
+ * 所有接口需要 ADMIN 角色权限
  */
 @RestController
 @RequestMapping("/api/admin")
-public class UserController {
+public class AdminUserController {
     private final UserService userService;
 
-    public UserController(UserService userService) {
+    public AdminUserController(UserService userService) {
         this.userService = userService;
     }
 
@@ -102,7 +104,8 @@ public class UserController {
 
     /**
      * 修改上级
-     * @param id 用户ID
+     *
+     * @param id                   用户ID
      * @param updateManagerRequest 修改上级请求数据传输对象
      */
     @PutMapping("/users/{id}/manager")

@@ -273,4 +273,31 @@ public class UserServiceImpl implements UserService {
         currentUser.setManagerId(updateManagerRequest.getManagerId());
         userMapper.updateById(currentUser);
     }
+
+    /**
+     * 获取个人信息
+     * @param id 用户ID
+     * @return 个人信息
+     */
+    @Override
+    public UserVO getProfile(Long id) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            throw new BusinessException(400, "用户不存在");
+        }
+
+        UserVO userVO = new UserVO();
+
+        userVO.setId(user.getId());
+        userVO.setUsername(user.getUsername());
+        userVO.setName(user.getName());
+        userVO.setEmail(user.getEmail());
+        userVO.setRoleCode(roleMapper.selectRoleCodeByUserId(id));
+        userVO.setRoleName(roleMapper.selectRoleNameByUserId(id));
+        userVO.setStatus(user.getStatus());
+        userVO.setCreateTime(user.getCreateTime());
+        userVO.setUpdateTime(user.getUpdateTime());
+
+        return userVO;
+    }
 }

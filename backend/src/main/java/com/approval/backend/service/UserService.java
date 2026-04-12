@@ -50,4 +50,11 @@ public interface UserService {
      * @param updateManagerRequest 修改上级请求数据传输对象
      */
     void updateManager(Long id, UpdateManagerRequest updateManagerRequest);
+
+    /**
+     * 获取个人信息
+     * @param id 用户ID
+     * @return 个人信息
+     */
+    UserVO getProfile(Long id);
 }

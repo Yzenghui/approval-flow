@@ -1,10 +1,7 @@
 package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
-import com.approval.backend.dto.request.CreateUserRequest;
-import com.approval.backend.dto.request.ResetPasswordRequest;
-import com.approval.backend.dto.request.UpdateManagerRequest;
-import com.approval.backend.dto.request.UpdateUserRequest;
+import com.approval.backend.dto.request.*;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.vo.UserVO;
 
@@ -57,4 +54,11 @@ public interface UserService {
      * @return 个人信息
      */
     UserVO getProfile(Long id);
+
+    /**
+     * 修改个人信息
+     * @param id 用户ID
+     * @param updateProfileRequest 修改个人信息请求数据传输对象
+     */
+    void updateProfile(Long id, UpdateProfileRequest updateProfileRequest);
 }

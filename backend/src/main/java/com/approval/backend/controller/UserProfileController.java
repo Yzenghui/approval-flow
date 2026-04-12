@@ -3,11 +3,11 @@ package com.approval.backend.controller;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.Result;
+import com.approval.backend.dto.request.UpdateProfileRequest;
 import com.approval.backend.service.UserService;
 import com.approval.backend.vo.UserVO;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 用户个人信息管理接口
@@ -25,6 +25,7 @@ public class UserProfileController {
 
     /**
      * 获取个人信息
+     *
      * @return 个人信息
      */
     @GetMapping("/profile")
@@ -32,6 +33,18 @@ public class UserProfileController {
     public Result<?> getProfile() {
         UserVO userVO = userService.getProfile(StpUtil.getLoginIdAsLong());
         return Result.success(userVO);
+    }
+
+    /**
+     * 修改个人信息
+     *
+     * @param updateProfileRequest 修改个人信息请求数据传输对象
+     */
+    @PatchMapping("/profile")
+    @SaCheckLogin
+    public Result<?> updateProfile(@RequestBody @Valid UpdateProfileRequest updateProfileRequest) {
+        userService.updateProfile(StpUtil.getLoginIdAsLong(), updateProfileRequest);
+        return Result.success(null);
     }
 
 }

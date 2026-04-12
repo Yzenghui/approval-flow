@@ -667,3 +667,52 @@ Authorization: {{user_token}}
 
 ### 获取个人信息 - 未登录（应返回 401）
 GET http://localhost:8080/api/user/profile
+
+
+
+### 登录获取 Token（zhangsan）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 修改邮箱 - 正常情况
+PATCH http://localhost:8080/api/user/profile
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "email": "zhangsan_new@example.com"
+}
+
+### 修改邮箱 - 邮箱已被其他用户使用
+PATCH http://localhost:8080/api/user/profile
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "email": "admin@example.com"
+}
+
+### 修改邮箱 - 邮箱格式错误
+PATCH http://localhost:8080/api/user/profile
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "email": "invalid-email"
+}
+
+### 修改邮箱 - 邮箱为空
+PATCH http://localhost:8080/api/user/profile
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "email": ""
+}

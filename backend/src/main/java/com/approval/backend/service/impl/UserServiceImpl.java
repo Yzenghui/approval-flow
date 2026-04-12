@@ -3,10 +3,7 @@ package com.approval.backend.service.impl;
 import cn.dev33.satoken.secure.BCrypt;
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
-import com.approval.backend.dto.request.CreateUserRequest;
-import com.approval.backend.dto.request.ResetPasswordRequest;
-import com.approval.backend.dto.request.UpdateManagerRequest;
-import com.approval.backend.dto.request.UpdateUserRequest;
+import com.approval.backend.dto.request.*;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.entity.Role;
 import com.approval.backend.entity.User;
@@ -53,19 +50,12 @@ public class UserServiceImpl implements UserService {
     public PageResult<UserVO> listUsers(Integer pageNum, Integer pageSize, String keyword, String roleCode, Integer status) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
-            wrapper.and(w -> w
-                    .like(User::getUsername, keyword)
-                    .or()
-                    .like(User::getName, keyword)
-                    .or()
-                    .like(User::getEmail, keyword));
+            wrapper.and(w -> w.like(User::getUsername, keyword).or().like(User::getName, keyword).or().like(User::getEmail, keyword));
         }
 
         Long roleId = null;
         if (StringUtils.hasText(roleCode)) {
-            Role role = roleMapper.selectOne(
-                    new LambdaQueryWrapper<Role>().eq(Role::getCode, roleCode)
-            );
+            Role role = roleMapper.selectOne(new LambdaQueryWrapper<Role>().eq(Role::getCode, roleCode));
             if (role != null) {
                 roleId = role.getId();
             }
@@ -90,11 +80,7 @@ public class UserServiceImpl implements UserService {
             return result;
         }
 
-        List<Long> roleIds = userPage.getRecords()
-                .stream()
-                .map(User::getRoleId)
-                .distinct()
-                .collect(Collectors.toList());
+        List<Long> roleIds = userPage.getRecords().stream().map(User::getRoleId).distinct().collect(Collectors.toList());
 
         Map<Long, Role> roleMap = new HashMap<>();
         if (!roleIds.isEmpty()) {
@@ -136,16 +122,12 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public CreateUserResponse createUser(CreateUserRequest createUserRequest) {
-        User existingUser = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getUsername, createUserRequest.getUsername())
-        );
+        User existingUser = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, createUserRequest.getUsername()));
         if (existingUser != null) {
             throw new BusinessException(400, "用户名已存在");
         }
 
-        User existingEmail = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getEmail, createUserRequest.getEmail())
-        );
+        User existingEmail = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getEmail, createUserRequest.getEmail()));
         if (existingEmail != null) {
             throw new BusinessException(400, "邮箱已存在");
         }
@@ -156,9 +138,7 @@ public class UserServiceImpl implements UserService {
         user.setName(createUserRequest.getName());
         user.setEmail(createUserRequest.getEmail());
 
-        Role role = roleMapper.selectOne(
-                new LambdaQueryWrapper<Role>().eq(Role::getCode, createUserRequest.getRoleCode())
-        );
+        Role role = roleMapper.selectOne(new LambdaQueryWrapper<Role>().eq(Role::getCode, createUserRequest.getRoleCode()));
         if (role == null) {
             throw new BusinessException(400, "角色编码无效");
         }
@@ -190,29 +170,24 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(400, "用户不存在");
         }
 
-        User existingEmail = userMapper.selectOne(
-                new LambdaQueryWrapper<User>()
-                        .eq(User::getEmail, updateUserRequest.getEmail())
-                        .ne(User::getId, id)
-        );
+        User existingEmail = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getEmail, updateUserRequest.getEmail()).ne(User::getId, id));
         if (existingEmail != null) {
             throw new BusinessException(400, "邮箱已存在");
         }
 
-        Role role = roleMapper.selectOne(
-                new LambdaQueryWrapper<Role>().eq(Role::getCode, updateUserRequest.getRoleCode())
-        );
+        Role role = roleMapper.selectOne(new LambdaQueryWrapper<Role>().eq(Role::getCode, updateUserRequest.getRoleCode()));
         if (role == null) {
             throw new BusinessException(400, "角色编码无效");
         }
         Long roleId = role.getId();
 
-        user.setName(updateUserRequest.getName());
-        user.setEmail(updateUserRequest.getEmail());
-        user.setRoleId(roleId);
-        user.setStatus(updateUserRequest.getStatus());
-
-        userMapper.updateById(user);
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, id)
+                .set(User::getName, updateUserRequest.getName())
+                .set(User::getEmail, updateUserRequest.getEmail())
+                .set(User::getRoleId, roleId)
+                .set(User::getStatus, updateUserRequest.getStatus())
+        );
     }
 
     /**
@@ -228,8 +203,10 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(400, "用户不存在");
         }
 
-        user.setPassword(BCrypt.hashpw(resetPasswordRequest.getPassword(), BCrypt.gensalt()));
-        userMapper.updateById(user);
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, id)
+                .set(User::getPassword, BCrypt.hashpw(resetPasswordRequest.getPassword(), BCrypt.gensalt()))
+        );
     }
 
     /**
@@ -246,9 +223,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (updateManagerRequest.getManagerId() == null) {
-            LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<User>()
-                    .eq(User::getId, id)
-                    .set(User::getManagerId, null);
+            LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<User>().eq(User::getId, id).set(User::getManagerId, null);
             userMapper.update(null, wrapper);
             return;
         }
@@ -270,12 +245,15 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(400, "上级角色等级必须高于当前用户");
         }
 
-        currentUser.setManagerId(updateManagerRequest.getManagerId());
-        userMapper.updateById(currentUser);
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, id)
+                .set(User::getManagerId, updateManagerRequest.getManagerId())
+        );
     }
 
     /**
      * 获取个人信息
+     *
      * @param id 用户ID
      * @return 个人信息
      */
@@ -299,5 +277,26 @@ public class UserServiceImpl implements UserService {
         userVO.setUpdateTime(user.getUpdateTime());
 
         return userVO;
+    }
+
+    /**
+     * 修改个人信息
+     *
+     * @param id                   用户ID
+     * @param updateProfileRequest 修改个人信息请求数据传输对象
+     */
+    @Override
+    public void updateProfile(Long id, UpdateProfileRequest updateProfileRequest) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            throw new BusinessException(400, "用户不存在");
+        }
+
+        User existingEmail = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getEmail, updateProfileRequest.getEmail()).ne(User::getId, id));
+        if (existingEmail != null) {
+            throw new BusinessException(400, "邮箱已存在");
+        }
+
+        userMapper.update(null, new LambdaUpdateWrapper<User>().eq(User::getId, id).set(User::getEmail, updateProfileRequest.getEmail()));
     }
 }

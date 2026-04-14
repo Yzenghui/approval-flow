@@ -1,0 +1,60 @@
+### ========================================
+### 流程定义管理测试
+### ========================================
+
+### 登录获取 Token（admin）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 流程定义列表 - 默认分页
+GET http://localhost:8080/api/admin/definitions
+Authorization: {{admin_token}}
+
+### 流程定义列表 - 第1页，每页5条
+GET http://localhost:8080/api/admin/definitions?pageNum=1&pageSize=5
+Authorization: {{admin_token}}
+
+### 流程定义列表 - 关键词搜索"请假"
+GET http://localhost:8080/api/admin/definitions?keyword=请假
+Authorization: {{admin_token}}
+
+### 流程定义列表 - 关键词搜索"报销"
+GET http://localhost:8080/api/admin/definitions?keyword=报销
+Authorization: {{admin_token}}
+
+### 流程定义列表 - 筛选启用状态(status=1)
+GET http://localhost:8080/api/admin/definitions?status=1
+Authorization: {{admin_token}}
+
+### 流程定义列表 - 组合条件：关键词+状态
+GET http://localhost:8080/api/admin/definitions?keyword=流程&status=1
+Authorization: {{admin_token}}
+
+### 流程定义列表 - 无匹配关键词
+GET http://localhost:8080/api/admin/definitions?keyword=不存在的流程
+Authorization: {{admin_token}}
+
+### 流程定义列表 - 未登录（应返回 401）
+GET http://localhost:8080/api/admin/definitions
+
+### 登录获取普通用户 Token（zhangsan）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 流程定义列表 - 非管理员访问（应返回 403）
+GET http://localhost:8080/api/admin/definitions
+Authorization: {{user_token}}

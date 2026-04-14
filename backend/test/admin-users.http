@@ -1,205 +1,6 @@
-### 登录 - 正确密码
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "123456"
-}
-
-### 登录 - 错误密码
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "wrong"
-}
-
-### 登录 - 用户不存在
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "notexist",
-  "password": "123456"
-}
-
-### 登录 - 空用户名
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "",
-  "password": "123456"
-}
-
-### 登录 - 空密码
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": ""
-}
-
-
-
-### 注册 - 正常情况
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "testuser",
-  "password": "abc123",
-  "name": "测试用户",
-  "email": "test@example.com"
-}
-
-### 注册 - 用户已存在
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "testuser",
-  "password": "abc123",
-  "name": "测试用户",
-  "email": "test1@example.com"
-}
-
-### 注册 - 用户名为空
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "",
-  "password": "abc123",
-  "name": "测试用户",
-  "email": "test1@example.com"
-}
-
-### 注册 - 用户名长度不足
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
- {
-  "username": "tu",
-  "password": "abc123",
-  "name": "测试用户",
-  "email": "test1@example.com"
-}
-
-### 注册 - 用户名以数字开头
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "123user",
-  "password": "abc123",
-  "name": "测试用户",
-  "email": "test1@example.com"
-}
-
-### 注册 - 用户名包含特殊字符
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "test@user",
-  "password": "abc123",
-  "name": "测试用户",
-  "email": "test1@example.com"
-}
-
-### 注册 - 密码为空
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
- {
-  "username": "testuser2",
-  "password": "",
-  "name": "测试用户",
-  "email": "test1@example.com"
-}
-
-### 注册 - 密码长度不足
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "testuser3",
-  "password": "ab1",
-  "name": "测试用户",
-  "email": "test1@example.com"
-}
-
-### 注册 - 密码缺少数字
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "testuser4",
-  "password": "abcdef",
-  "name": "测试用户",
-  "email": "test1@example.com"
-}
-
-### 注册 - 姓名为空
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "testuser5",
-  "password": "abc123",
-  "name": "",
-  "email": "test1@example.com"
-}
-
-### 注册 - 姓名长度不足
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
- {
-  "username": "testuser6",
-  "password": "abc123",
-  "name": "t",
-  "email": "test1@example.com"
-}
-
-### 注册 - 邮箱为空
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "testuser7",
-  "password": "abc123",
-  "name": "测试用户",
-  "email": ""
-}
-
-### 注册 - 邮箱格式错误
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "testuser8",
-  "password": "abc123",
-  "name": "测试用户",
-  "email": "invalid-email"
-}
-
-### 注册 - 邮箱已存在
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "testuser9",
-  "password": "abc123",
-  "name": "测试用户",
-  "email": "test@example.com"
-}
-
-
+### ========================================
+### 管理员用户管理测试
+### ========================================
 
 ### 登录获取 Token（admin）
 POST http://localhost:8080/api/auth/login
@@ -274,7 +75,9 @@ Authorization: {{admin_token}}
 GET http://localhost:8080/api/admin/users?pageNum=1&pageSize=200
 Authorization: {{admin_token}}
 
-
+### ========================================
+### 新增用户功能测试
+### ========================================
 
 ### 登录获取 Token（admin）
 POST http://localhost:8080/api/auth/login
@@ -417,7 +220,9 @@ Authorization: {{admin_token}}
   "roleCode": "STAFF"
 }
 
-
+### ========================================
+### 编辑用户功能测试
+### ========================================
 
 ### 登录获取 Token（admin）
 POST http://localhost:8080/api/auth/login
@@ -523,7 +328,9 @@ Authorization: {{admin_token}}
   "status": 2
 }
 
-
+### ========================================
+### 重置密码功能测试
+### ========================================
 
 ### 登录获取 Token（admin）
 POST http://localhost:8080/api/auth/login
@@ -581,7 +388,9 @@ Content-Type: application/json
   "password": "newPass123"
 }
 
-
+### ========================================
+### 修改上级功能测试
+### ========================================
 
 ### 登录获取 Token（admin）
 POST http://localhost:8080/api/auth/login
@@ -646,144 +455,4 @@ Authorization: {{admin_token}}
 
 {
   "managerId": 5
-}
-
-
-
-### 登录获取 Token（zhangsan）
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "zhangsan",
-  "password": "123456"
-}
-
-> {% client.global.set("user_token", response.body.data.token); %}
-
-### 获取个人信息 - 正常情况
-GET http://localhost:8080/api/user/profile
-Authorization: {{user_token}}
-
-### 获取个人信息 - 未登录（应返回 401）
-GET http://localhost:8080/api/user/profile
-
-
-
-### 登录获取 Token（zhangsan）
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "zhangsan",
-  "password": "123456"
-}
-
-> {% client.global.set("user_token", response.body.data.token); %}
-
-### 修改邮箱 - 正常情况
-PATCH http://localhost:8080/api/user/profile
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "email": "zhangsan_new@example.com"
-}
-
-### 修改邮箱 - 邮箱已被其他用户使用
-PATCH http://localhost:8080/api/user/profile
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "email": "admin@example.com"
-}
-
-### 修改邮箱 - 邮箱格式错误
-PATCH http://localhost:8080/api/user/profile
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "email": "invalid-email"
-}
-
-### 修改邮箱 - 邮箱为空
-PATCH http://localhost:8080/api/user/profile
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "email": ""
-}
-
-
-
-### 登录获取 Token（lisi）
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "lisi",
-  "password": "123456"
-}
-
-> {% client.global.set("user_token", response.body.data.token); %}
-
-### 修改个人密码 - 正常情况
-PUT http://localhost:8080/api/user/password
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "oldPassword": "123456",
-  "newPassword": "newPass123"
-}
-
-### 修改个人密码 - 原密码错误
-PUT http://localhost:8080/api/user/password
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "oldPassword": "wrongPassword",
-  "newPassword": "newPass123"
-}
-
-### 修改个人密码 - 新密码与原密码相同
-PUT http://localhost:8080/api/user/password
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "oldPassword": "newPass123",
-  "newPassword": "newPass123"
-}
-
-### 修改个人密码 - 新密码格式错误
-PUT http://localhost:8080/api/user/password
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "oldPassword": "123456",
-  "newPassword": "abc"
-}
-
-### 修改个人密码 - 未登录（应返回 401）
-PUT http://localhost:8080/api/user/password
-Content-Type: application/json
-
-{
-  "oldPassword": "123456",
-  "newPassword": "newPass123"
-}
-
-### 验证新密码登录
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "lisi",
-  "password": "newPass123"
 }

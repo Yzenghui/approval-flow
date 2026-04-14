@@ -1,0 +1,58 @@
+package com.approval.backend.controller;
+
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaCheckRole;
+import com.approval.backend.common.PageResult;
+import com.approval.backend.common.Result;
+import com.approval.backend.service.ProcessDefinitionService;
+import com.approval.backend.vo.ProcessDefinitionVO;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * 流程定义控制器
+ */
+@RestController
+@RequestMapping("/api/admin")
+public class ProcessDefinitionController {
+    private final ProcessDefinitionService processDefinitionService;
+
+    public ProcessDefinitionController(ProcessDefinitionService processDefinitionService) {
+        this.processDefinitionService = processDefinitionService;
+    }
+
+    /**
+     * 获取流程定义列表
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页数量
+     * @param keyword  搜索关键词（流程名称）
+     * @param status   状态
+     * @return 流程定义列表
+     */
+    @GetMapping("/definitions")
+    @SaCheckLogin
+    @SaCheckRole("ADMIN")
+    public Result<?> listDefinitions(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status
+    ) {
+        if (pageNum == null || pageNum < 1) {
+            pageNum = 1;
+        }
+        if (pageSize == null || pageSize < 1) {
+            pageSize = 10;
+        }
+        if (pageSize > 100) {
+            pageSize = 100;
+        }
+
+        PageResult<ProcessDefinitionVO> result = processDefinitionService.listDefinitions(pageNum, pageSize, keyword, status);
+
+        return Result.success(result);
+    }
+}

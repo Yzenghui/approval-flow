@@ -50,7 +50,12 @@ public class UserServiceImpl implements UserService {
     public PageResult<UserVO> listUsers(Integer pageNum, Integer pageSize, String keyword, String roleCode, Integer status) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
-            wrapper.and(w -> w.like(User::getUsername, keyword).or().like(User::getName, keyword).or().like(User::getEmail, keyword));
+            wrapper.and(w -> w
+                    .like(User::getUsername, keyword)
+                    .or()
+                    .like(User::getName, keyword)
+                    .or()
+                    .like(User::getEmail, keyword));
         }
 
         Long roleId = null;
@@ -80,7 +85,10 @@ public class UserServiceImpl implements UserService {
             return result;
         }
 
-        List<Long> roleIds = userPage.getRecords().stream().map(User::getRoleId).distinct().collect(Collectors.toList());
+        List<Long> roleIds = userPage.getRecords().stream()
+                .map(User::getRoleId)
+                .distinct()
+                .collect(Collectors.toList());
 
         Map<Long, Role> roleMap = new HashMap<>();
         if (!roleIds.isEmpty()) {

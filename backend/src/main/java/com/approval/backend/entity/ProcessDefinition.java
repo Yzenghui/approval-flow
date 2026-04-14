@@ -1,9 +1,6 @@
 package com.approval.backend.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -12,6 +9,7 @@ import java.time.LocalDateTime;
  * 流程定义
  */
 @Data
+@TableName("process_definition")
 public class ProcessDefinition {
     @TableId(type = IdType.AUTO)
     private Long id;

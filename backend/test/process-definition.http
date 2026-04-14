@@ -58,3 +58,50 @@ Content-Type: application/json
 ### 流程定义列表 - 非管理员访问（应返回 403）
 GET http://localhost:8080/api/admin/definitions
 Authorization: {{user_token}}
+
+### ========================================
+### 流程定义详情测试
+### ========================================
+
+### 登录获取 Token（admin）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 获取流程定义详情 - 正常情况（请假流程）
+GET http://localhost:8080/api/admin/definition/1
+Authorization: {{admin_token}}
+
+### 获取流程定义详情 - 报销流程
+GET http://localhost:8080/api/admin/definition/2
+Authorization: {{admin_token}}
+
+### 获取流程定义详情 - 流程不存在
+GET http://localhost:8080/api/admin/definition/999
+Authorization: {{admin_token}}
+
+### 获取流程定义详情 - 未登录（应返回 401）
+GET http://localhost:8080/api/admin/definition/1
+
+### 登录获取普通用户 Token（zhangsan）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 获取流程定义详情 - 非管理员访问（应返回 403）
+GET http://localhost:8080/api/admin/definition/1
+Authorization: {{user_token}}
+
+

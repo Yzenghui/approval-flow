@@ -1,6 +1,7 @@
 package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
+import com.approval.backend.vo.ProcessDefinitionDetailVO;
 import com.approval.backend.vo.ProcessDefinitionVO;
 
 /**
@@ -17,4 +18,11 @@ public interface ProcessDefinitionService {
      * @return 分页结果
      */
     PageResult<ProcessDefinitionVO> listDefinitions(Integer pageNum, Integer pageSize, String keyword, Integer status);
+
+    /**
+     * 获取流程详情
+     * @param id 流程定义ID
+     * @return 流程详情
+     */
+    ProcessDefinitionDetailVO getDefinitionDetail(Long id);
 }

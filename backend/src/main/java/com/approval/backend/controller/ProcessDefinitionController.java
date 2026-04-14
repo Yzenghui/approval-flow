@@ -5,11 +5,9 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
 import com.approval.backend.service.ProcessDefinitionService;
+import com.approval.backend.vo.ProcessDefinitionDetailVO;
 import com.approval.backend.vo.ProcessDefinitionVO;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 流程定义控制器
@@ -54,5 +52,18 @@ public class ProcessDefinitionController {
         PageResult<ProcessDefinitionVO> result = processDefinitionService.listDefinitions(pageNum, pageSize, keyword, status);
 
         return Result.success(result);
+    }
+
+    /**
+     * 获取流程定义详情
+     * @param id 流程定义ID
+     * @return 流程定义详情
+     */
+    @GetMapping("/definition/{id}")
+    @SaCheckLogin
+    @SaCheckRole("ADMIN")
+    public Result<?> getDefinitionDetail(@PathVariable Long id) {
+        ProcessDefinitionDetailVO processDefinitionDetailVO = processDefinitionService.getDefinitionDetail(id);
+        return Result.success(processDefinitionDetailVO);
     }
 }

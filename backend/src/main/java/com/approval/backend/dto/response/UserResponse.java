@@ -1,14 +1,14 @@
-package com.approval.backend.vo;
+package com.approval.backend.dto.response;
 
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 /**
- * 用户视图对象
+ * 用户响应数据传输对象
  */
 @Data
-public class UserVO {
+public class UserResponse {
     private Long id;
     private String username;
     private String name;

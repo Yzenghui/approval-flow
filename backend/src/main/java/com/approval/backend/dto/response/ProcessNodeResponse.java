@@ -1,12 +1,12 @@
-package com.approval.backend.vo;
+package com.approval.backend.dto.response;
 
 import lombok.Data;
 
 /**
- * 流程节点视图对象
+ * 流程节点响应数据传输对象
  */
 @Data
-public class ProcessNodeVO {
+public class ProcessNodeResponse {
     private Long id;
     private String nodeName;
     private Integer nodeOrder;

@@ -10,7 +10,7 @@ import com.approval.backend.entity.User;
 import com.approval.backend.mapper.RoleMapper;
 import com.approval.backend.mapper.UserMapper;
 import com.approval.backend.service.UserService;
-import com.approval.backend.vo.UserVO;
+import com.approval.backend.dto.response.UserResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
      * @return 分页结果
      */
     @Override
-    public PageResult<UserVO> listUsers(Integer pageNum, Integer pageSize, String keyword, String roleCode, Integer status) {
+    public PageResult<UserResponse> listUsers(Integer pageNum, Integer pageSize, String keyword, String roleCode, Integer status) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w
@@ -79,7 +79,7 @@ public class UserServiceImpl implements UserService {
         Page<User> userPage = userMapper.selectPage(page, wrapper);
 
         if (userPage.getRecords().isEmpty()) {
-            PageResult<UserVO> result = new PageResult<>();
+            PageResult<UserResponse> result = new PageResult<>();
             result.setTotal(0L);
             result.setRecords(new ArrayList<>());
             return result;
@@ -98,25 +98,25 @@ public class UserServiceImpl implements UserService {
 
         Map<Long, Role> finalRoleMap = roleMap;
 
-        List<UserVO> records = userPage.getRecords().stream().map(user -> {
-            UserVO vo = new UserVO();
-            vo.setId(user.getId());
-            vo.setUsername(user.getUsername());
-            vo.setName(user.getName());
-            vo.setEmail(user.getEmail());
-            vo.setStatus(user.getStatus());
-            vo.setCreateTime(user.getCreateTime());
-            vo.setUpdateTime(user.getUpdateTime());
+        List<UserResponse> records = userPage.getRecords().stream().map(user -> {
+            UserResponse userResponse = new UserResponse();
+            userResponse.setId(user.getId());
+            userResponse.setUsername(user.getUsername());
+            userResponse.setName(user.getName());
+            userResponse.setEmail(user.getEmail());
+            userResponse.setStatus(user.getStatus());
+            userResponse.setCreateTime(user.getCreateTime());
+            userResponse.setUpdateTime(user.getUpdateTime());
 
             Role role = finalRoleMap.get(user.getRoleId());
             if (role != null) {
-                vo.setRoleCode(role.getCode());
-                vo.setRoleName(role.getName());
+                userResponse.setRoleCode(role.getCode());
+                userResponse.setRoleName(role.getName());
             }
-            return vo;
+            return userResponse;
         }).collect(Collectors.toList());
 
-        PageResult<UserVO> result = new PageResult<>();
+        PageResult<UserResponse> result = new PageResult<>();
         result.setTotal(userPage.getTotal());
         result.setRecords(records);
         return result;
@@ -266,25 +266,25 @@ public class UserServiceImpl implements UserService {
      * @return 个人信息
      */
     @Override
-    public UserVO getProfile(Long id) {
+    public UserResponse getProfile(Long id) {
         User user = userMapper.selectById(id);
         if (user == null) {
             throw new BusinessException(400, "用户不存在");
         }
 
-        UserVO userVO = new UserVO();
+        UserResponse userResponse = new UserResponse();
 
-        userVO.setId(user.getId());
-        userVO.setUsername(user.getUsername());
-        userVO.setName(user.getName());
-        userVO.setEmail(user.getEmail());
-        userVO.setRoleCode(roleMapper.selectRoleCodeByUserId(id));
-        userVO.setRoleName(roleMapper.selectRoleNameByUserId(id));
-        userVO.setStatus(user.getStatus());
-        userVO.setCreateTime(user.getCreateTime());
-        userVO.setUpdateTime(user.getUpdateTime());
+        userResponse.setId(user.getId());
+        userResponse.setUsername(user.getUsername());
+        userResponse.setName(user.getName());
+        userResponse.setEmail(user.getEmail());
+        userResponse.setRoleCode(roleMapper.selectRoleCodeByUserId(id));
+        userResponse.setRoleName(roleMapper.selectRoleNameByUserId(id));
+        userResponse.setStatus(user.getStatus());
+        userResponse.setCreateTime(user.getCreateTime());
+        userResponse.setUpdateTime(user.getUpdateTime());
 
-        return userVO;
+        return userResponse;
     }
 
     /**

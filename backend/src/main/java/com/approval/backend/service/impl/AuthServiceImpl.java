@@ -12,7 +12,7 @@ import com.approval.backend.entity.User;
 import com.approval.backend.mapper.RoleMapper;
 import com.approval.backend.mapper.UserMapper;
 import com.approval.backend.service.AuthService;
-import com.approval.backend.vo.UserVO;
+import com.approval.backend.dto.response.UserResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 
@@ -55,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
         LoginResponse response = new LoginResponse();
         response.setToken(token);
 
-        UserVO userInfo = new UserVO();
+        UserResponse userInfo = new UserResponse();
         userInfo.setId(user.getId());
         userInfo.setUsername(user.getUsername());
         userInfo.setName(user.getName());

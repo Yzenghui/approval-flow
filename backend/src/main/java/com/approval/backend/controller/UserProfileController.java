@@ -6,7 +6,7 @@ import com.approval.backend.common.Result;
 import com.approval.backend.dto.request.UpdatePasswordRequest;
 import com.approval.backend.dto.request.UpdateProfileRequest;
 import com.approval.backend.service.UserService;
-import com.approval.backend.vo.UserVO;
+import com.approval.backend.dto.response.UserResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,8 +32,8 @@ public class UserProfileController {
     @GetMapping("/profile")
     @SaCheckLogin
     public Result<?> getProfile() {
-        UserVO userVO = userService.getProfile(StpUtil.getLoginIdAsLong());
-        return Result.success(userVO);
+        UserResponse userResponse = userService.getProfile(StpUtil.getLoginIdAsLong());
+        return Result.success(userResponse);
     }
 
     /**

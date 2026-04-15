@@ -1,8 +1,8 @@
 package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
-import com.approval.backend.vo.ProcessDefinitionDetailVO;
-import com.approval.backend.vo.ProcessDefinitionVO;
+import com.approval.backend.dto.response.ProcessDefinitionResponse;
+import com.approval.backend.dto.response.ProcessDefinitionDetailResponse;
 
 /**
  * 流程定义服务接口
@@ -17,12 +17,12 @@ public interface ProcessDefinitionService {
      * @param status   状态
      * @return 分页结果
      */
-    PageResult<ProcessDefinitionVO> listDefinitions(Integer pageNum, Integer pageSize, String keyword, Integer status);
+    PageResult<ProcessDefinitionResponse> listDefinitions(Integer pageNum, Integer pageSize, String keyword, Integer status);
 
     /**
      * 获取流程详情
      * @param id 流程定义ID
      * @return 流程详情
      */
-    ProcessDefinitionDetailVO getDefinitionDetail(Long id);
+    ProcessDefinitionDetailResponse getDefinitionDetail(Long id);
 }

@@ -1,6 +1,5 @@
 package com.approval.backend.dto.response;
 
-import com.approval.backend.vo.UserVO;
 import lombok.Data;
 
 /**
@@ -9,5 +8,5 @@ import lombok.Data;
 @Data
 public class LoginResponse {
     private String token;
-    private UserVO userInfo;
+    private UserResponse userInfo;
 }

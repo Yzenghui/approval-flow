@@ -3,7 +3,7 @@ package com.approval.backend.service;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.*;
 import com.approval.backend.dto.response.CreateUserResponse;
-import com.approval.backend.vo.UserVO;
+import com.approval.backend.dto.response.UserResponse;
 
 /**
  * 用户服务接口
@@ -18,7 +18,7 @@ public interface UserService {
      * @param status 状态筛选
      * @return 分页结果
      */
-    PageResult<UserVO> listUsers(Integer pageNum, Integer pageSize, String keyword, String roleCode, Integer status);
+    PageResult<UserResponse> listUsers(Integer pageNum, Integer pageSize, String keyword, String roleCode, Integer status);
 
     /**
      * 创建用户
@@ -53,7 +53,7 @@ public interface UserService {
      * @param id 用户ID
      * @return 个人信息
      */
-    UserVO getProfile(Long id);
+    UserResponse getProfile(Long id);
 
     /**
      * 修改个人信息

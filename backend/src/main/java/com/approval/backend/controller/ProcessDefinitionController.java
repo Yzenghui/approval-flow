@@ -4,9 +4,9 @@ import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
+import com.approval.backend.dto.response.ProcessDefinitionResponse;
 import com.approval.backend.service.ProcessDefinitionService;
-import com.approval.backend.vo.ProcessDefinitionDetailVO;
-import com.approval.backend.vo.ProcessDefinitionVO;
+import com.approval.backend.dto.response.ProcessDefinitionDetailResponse;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -49,7 +49,7 @@ public class ProcessDefinitionController {
             pageSize = 100;
         }
 
-        PageResult<ProcessDefinitionVO> result = processDefinitionService.listDefinitions(pageNum, pageSize, keyword, status);
+        PageResult<ProcessDefinitionResponse> result = processDefinitionService.listDefinitions(pageNum, pageSize, keyword, status);
 
         return Result.success(result);
     }
@@ -63,7 +63,7 @@ public class ProcessDefinitionController {
     @SaCheckLogin
     @SaCheckRole("ADMIN")
     public Result<?> getDefinitionDetail(@PathVariable Long id) {
-        ProcessDefinitionDetailVO processDefinitionDetailVO = processDefinitionService.getDefinitionDetail(id);
-        return Result.success(processDefinitionDetailVO);
+        ProcessDefinitionDetailResponse processDefinitionDetailResponse = processDefinitionService.getDefinitionDetail(id);
+        return Result.success(processDefinitionDetailResponse);
     }
 }

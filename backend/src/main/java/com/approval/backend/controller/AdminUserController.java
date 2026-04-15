@@ -10,7 +10,7 @@ import com.approval.backend.dto.request.UpdateManagerRequest;
 import com.approval.backend.dto.request.UpdateUserRequest;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.service.UserService;
-import com.approval.backend.vo.UserVO;
+import com.approval.backend.dto.response.UserResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,7 +56,7 @@ public class AdminUserController {
             pageSize = 100;
         }
 
-        PageResult<UserVO> result = userService.listUsers(pageNum, pageSize, keyword, roleCode, status);
+        PageResult<UserResponse> result = userService.listUsers(pageNum, pageSize, keyword, roleCode, status);
         return Result.success(result);
     }
 

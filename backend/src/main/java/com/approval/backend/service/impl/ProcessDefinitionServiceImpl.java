@@ -2,14 +2,14 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.dto.response.ProcessDefinitionResponse;
 import com.approval.backend.entity.ProcessDefinition;
 import com.approval.backend.entity.ProcessNode;
 import com.approval.backend.mapper.ProcessDefinitionMapper;
 import com.approval.backend.mapper.ProcessNodeMapper;
 import com.approval.backend.service.ProcessDefinitionService;
-import com.approval.backend.vo.ProcessDefinitionDetailVO;
-import com.approval.backend.vo.ProcessDefinitionVO;
-import com.approval.backend.vo.ProcessNodeVO;
+import com.approval.backend.dto.response.ProcessNodeResponse;
+import com.approval.backend.dto.response.ProcessDefinitionDetailResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.BeanUtils;
@@ -42,7 +42,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
      * @return 流程定义列表
      */
     @Override
-    public PageResult<ProcessDefinitionVO> listDefinitions(Integer pageNum, Integer pageSize, String keyword, Integer status) {
+    public PageResult<ProcessDefinitionResponse> listDefinitions(Integer pageNum, Integer pageSize, String keyword, Integer status) {
         LambdaQueryWrapper<ProcessDefinition> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
             wrapper.like(ProcessDefinition::getName, keyword);
@@ -57,11 +57,11 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         Page<ProcessDefinition> page = new Page<>(pageNum, pageSize);
         Page<ProcessDefinition> processDefinitionPage = processDefinitionMapper.selectPage(page, wrapper);
 
-        PageResult<ProcessDefinitionVO> pageResult = new PageResult<>();
+        PageResult<ProcessDefinitionResponse> pageResult = new PageResult<>();
         pageResult.setTotal(processDefinitionPage.getTotal());
         pageResult.setRecords(processDefinitionPage.getRecords()
                 .stream()
-                .map(this::convertToDefinitionVO)
+                .map(this::convertToDefinitionResponse)
                 .collect(Collectors.toList())
         );
 
@@ -74,7 +74,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
      * @return 流程定义详情
      */
     @Override
-    public ProcessDefinitionDetailVO getDefinitionDetail(Long id) {
+    public ProcessDefinitionDetailResponse getDefinitionDetail(Long id) {
         ProcessDefinition processDefinition = processDefinitionMapper.selectById(id);
         if (processDefinition == null) {
             throw new BusinessException(400, "流程不存在");
@@ -86,41 +86,41 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         List<ProcessNode> processNodes = processNodeMapper.selectList(wrapper);
 
-        List<ProcessNodeVO> processNodeVOS = processNodes.stream()
-                .map(this::convertToNodeVO)
+        List<ProcessNodeResponse> processNodeResponses = processNodes.stream()
+                .map(this::convertToNodeResponse)
                 .collect(Collectors.toList());
 
-        ProcessDefinitionDetailVO processDefinitionDetailVO = new ProcessDefinitionDetailVO();
-        BeanUtils.copyProperties(convertToDefinitionVO(processDefinition), processDefinitionDetailVO);
-        processDefinitionDetailVO.setNodes(processNodeVOS);
+        ProcessDefinitionDetailResponse processDefinitionDetailResponse = new ProcessDefinitionDetailResponse();
+        BeanUtils.copyProperties(convertToDefinitionResponse(processDefinition), processDefinitionDetailResponse);
+        processDefinitionDetailResponse.setNodes(processNodeResponses);
 
-        return processDefinitionDetailVO;
+        return processDefinitionDetailResponse;
 
     }
 
     /**
-     * 转换为流程定义视图对象
+     * 转换为流程定义响应对象
      *
      * @param processDefinition 流程定义
-     * @return 流程定义视图对象
+     * @return 流程定义响应对象
      */
-    private ProcessDefinitionVO convertToDefinitionVO(ProcessDefinition processDefinition) {
-        ProcessDefinitionVO processDefinitionVO = new ProcessDefinitionVO();
-        BeanUtils.copyProperties(processDefinition, processDefinitionVO);
-        return processDefinitionVO;
+    private ProcessDefinitionResponse convertToDefinitionResponse(ProcessDefinition processDefinition) {
+        ProcessDefinitionResponse processDefinitionResponse = new ProcessDefinitionResponse();
+        BeanUtils.copyProperties(processDefinition, processDefinitionResponse);
+        return processDefinitionResponse;
     }
 
     /**
-     * 转换为流程节点视图对象
+     * 转换为流程节点响应对象
      *
      * @param processNode 流程节点
-     * @return 流程节点视图对象
+     * @return 流程节点响应对象
      */
-    private ProcessNodeVO convertToNodeVO(ProcessNode processNode) {
-        ProcessNodeVO processNodeVO = new ProcessNodeVO();
-        BeanUtils.copyProperties(processNode, processNodeVO);
+    private ProcessNodeResponse convertToNodeResponse(ProcessNode processNode) {
+        ProcessNodeResponse processNodeResponse = new ProcessNodeResponse();
+        BeanUtils.copyProperties(processNode, processNodeResponse);
 
-        return processNodeVO;
+        return processNodeResponse;
 
     }
 }

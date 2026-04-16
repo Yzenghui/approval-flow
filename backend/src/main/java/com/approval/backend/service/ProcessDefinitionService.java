@@ -1,6 +1,7 @@
 package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
+import com.approval.backend.dto.request.CreateProcessRequest;
 import com.approval.backend.dto.response.ProcessDefinitionResponse;
 import com.approval.backend.dto.response.ProcessDefinitionDetailResponse;
 
@@ -21,8 +22,17 @@ public interface ProcessDefinitionService {
 
     /**
      * 获取流程详情
+     *
      * @param id 流程定义ID
      * @return 流程详情
      */
     ProcessDefinitionDetailResponse getDefinitionDetail(Long id);
+
+    /**
+     * 新增流程
+     *
+     * @param createProcessRequest 新增流程请求数据传输对象
+     * @return 流程定义响应数据传输对象
+     */
+    ProcessDefinitionResponse createProcess(CreateProcessRequest createProcessRequest);
 }

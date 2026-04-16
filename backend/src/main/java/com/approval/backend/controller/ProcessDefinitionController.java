@@ -4,9 +4,11 @@ import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
+import com.approval.backend.dto.request.CreateProcessRequest;
 import com.approval.backend.dto.response.ProcessDefinitionResponse;
 import com.approval.backend.service.ProcessDefinitionService;
 import com.approval.backend.dto.response.ProcessDefinitionDetailResponse;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -59,11 +61,24 @@ public class ProcessDefinitionController {
      * @param id 流程定义ID
      * @return 流程定义详情
      */
-    @GetMapping("/definition/{id}")
+    @GetMapping("/definitions/{id}")
     @SaCheckLogin
     @SaCheckRole("ADMIN")
     public Result<?> getDefinitionDetail(@PathVariable Long id) {
         ProcessDefinitionDetailResponse processDefinitionDetailResponse = processDefinitionService.getDefinitionDetail(id);
         return Result.success(processDefinitionDetailResponse);
+    }
+
+    /**
+     * 新增流程
+     * @param createProcessRequest 新增流程请求
+     * @return 流程定义响应数据传输对象
+     */
+    @PostMapping("/definitions")
+    @SaCheckLogin
+    @SaCheckRole("ADMIN")
+    public Result<?> createProcess(@RequestBody @Valid CreateProcessRequest createProcessRequest) {
+        ProcessDefinitionResponse processDefinitionResponse = processDefinitionService.createProcess(createProcessRequest);
+        return Result.success(processDefinitionResponse);
     }
 }

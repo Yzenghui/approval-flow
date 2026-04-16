@@ -75,19 +75,19 @@ Content-Type: application/json
 > {% client.global.set("admin_token", response.body.data.token); %}
 
 ### 获取流程定义详情 - 正常情况（请假流程）
-GET http://localhost:8080/api/admin/definition/1
+GET http://localhost:8080/api/admin/definitions/1
 Authorization: {{admin_token}}
 
 ### 获取流程定义详情 - 报销流程
-GET http://localhost:8080/api/admin/definition/2
+GET http://localhost:8080/api/admin/definitions/2
 Authorization: {{admin_token}}
 
 ### 获取流程定义详情 - 流程不存在
-GET http://localhost:8080/api/admin/definition/999
+GET http://localhost:8080/api/admin/definitions/999
 Authorization: {{admin_token}}
 
 ### 获取流程定义详情 - 未登录（应返回 401）
-GET http://localhost:8080/api/admin/definition/1
+GET http://localhost:8080/api/admin/definitions/1
 
 ### 登录获取普通用户 Token（zhangsan）
 POST http://localhost:8080/api/auth/login
@@ -101,7 +101,237 @@ Content-Type: application/json
 > {% client.global.set("user_token", response.body.data.token); %}
 
 ### 获取流程定义详情 - 非管理员访问（应返回 403）
-GET http://localhost:8080/api/admin/definition/1
+GET http://localhost:8080/api/admin/definitions/1
 Authorization: {{user_token}}
+
+### ========================================
+### 新增流程功能测试
+### ========================================
+
+### 登录获取 Token（admin）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 新增流程 - 采购申请流程（多级审批）
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "采购申请流程",
+  "nodes": [
+    {
+      "nodeName": "一级审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": "amount <= 1000"
+    },
+    {
+      "nodeName": "二级审批",
+      "nodeOrder": 2,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id.manager_id",
+      "conditionExpr": "amount > 1000"
+    }
+  ]
+}
+
+### 新增流程 - 流程名称已存在
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "报销流程",
+  "nodes": [
+    {
+      "nodeName": "一级审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": "amount <= 1000"
+    }
+  ]
+}
+
+### 新增流程 - 节点顺序重复
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试重复顺序流程",
+  "nodes": [
+    {
+      "nodeName": "节点 A",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    },
+    {
+      "nodeName": "节点 B",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 新增流程 - 分配策略无效
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试无效策略流程",
+  "nodes": [
+    {
+      "nodeName": "一级审批",
+      "nodeOrder": 1,
+      "assigneeType": "INVALID",
+      "assigneeExpr": "test",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 新增流程 - RELATIVE 策略格式错误
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试 RELATIVE 格式错误流程",
+  "nodes": [
+    {
+      "nodeName": "一级审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 新增流程 - USER 策略非数字
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试 USER 格式错误流程",
+  "nodes": [
+    {
+      "nodeName": "一级审批",
+      "nodeOrder": 1,
+      "assigneeType": "USER",
+      "assigneeExpr": "abc123",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 新增流程 - ROLE 策略编码不存在
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试 ROLE 编码不存在流程",
+  "nodes": [
+    {
+      "nodeName": "一级审批",
+      "nodeOrder": 1,
+      "assigneeType": "ROLE",
+      "assigneeExpr": "INVALID_ROLE",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 新增流程 - 节点列表为空
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试空节点流程",
+  "nodes": []
+}
+
+### 新增流程 - 流程名称为空
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "",
+  "nodes": [
+    {
+      "nodeName": "一级审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 新增流程 - 未登录（应返回 401）
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+
+{
+  "name": "测试未登录流程",
+  "nodes": [
+    {
+      "nodeName": "一级审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 登录获取普通用户 Token（zhangsan）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 新增流程 - 非管理员访问（应返回 403）
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "name": "测试权限流程",
+  "nodes": [
+    {
+      "nodeName": "一级审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
 
 

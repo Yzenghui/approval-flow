@@ -58,6 +58,7 @@ public class ProcessDefinitionController {
 
     /**
      * 获取流程定义详情
+     *
      * @param id 流程定义ID
      * @return 流程定义详情
      */
@@ -71,6 +72,7 @@ public class ProcessDefinitionController {
 
     /**
      * 新增流程
+     *
      * @param createProcessRequest 新增流程请求
      * @return 流程定义响应数据传输对象
      */
@@ -79,6 +81,21 @@ public class ProcessDefinitionController {
     @SaCheckRole("ADMIN")
     public Result<?> createProcess(@RequestBody @Valid CreateProcessRequest createProcessRequest) {
         ProcessDefinitionResponse processDefinitionResponse = processDefinitionService.createProcess(createProcessRequest);
+        return Result.success(processDefinitionResponse);
+    }
+
+    /**
+     * 编辑流程
+     *
+     * @param id                   流程定义ID
+     * @param createProcessRequest 编辑流程请求
+     * @return 流程定义响应数据传输对象
+     */
+    @PatchMapping("/definitions/{id}")
+    @SaCheckLogin
+    @SaCheckRole("ADMIN")
+    public Result<?> updateProcess(@PathVariable Long id, @RequestBody @Valid CreateProcessRequest createProcessRequest) {
+        ProcessDefinitionResponse processDefinitionResponse = processDefinitionService.updateProcess(id, createProcessRequest);
         return Result.success(processDefinitionResponse);
     }
 }

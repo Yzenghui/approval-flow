@@ -363,6 +363,305 @@ Authorization: {{user_token}}
   ]
 }
 
+### ========================================
+### 编辑流程功能测试
+### ========================================
+
+### 登录获取 Token（admin）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 编辑流程 - 正常修改名称和节点阈值（采购申请流程 ID=3）
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": "amount <= 500"
+    },
+    {
+      "nodeName": "经理审批",
+      "nodeOrder": 2,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id.manager_id",
+      "conditionExpr": "amount > 500"
+    }
+  ]
+}
+
+### 编辑流程 - 流程不存在
+PATCH http://localhost:8080/api/admin/definitions/999
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "不存在的流程",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - 流程名称已存在（与其他流程重名）
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工请假流程",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - 适用角色编码无效
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "INVALID_ROLE",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - 分配策略无效
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "UNKNOWN",
+      "assigneeExpr": "test",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - RELATIVE 策略格式错误
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - USER 策略非数字
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "USER",
+      "assigneeExpr": "abc123",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - ROLE 策略编码不存在
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "ROLE",
+      "assigneeExpr": "NOT_EXIST",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - 节点顺序重复
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "节点 A",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    },
+    {
+      "nodeName": "节点 B",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - 节点列表为空
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "STAFF",
+  "nodes": []
+}
+
+### 编辑流程 - 流程名称为空
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - roleCode 为空
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - 未登录（应返回 401）
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+
+{
+  "name": "员工采购流程",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 登录获取普通用户 Token（zhangsan）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 编辑流程 - 非管理员访问（应返回 403）
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "STAFF",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+
+
 
 
 

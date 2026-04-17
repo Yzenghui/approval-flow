@@ -6,15 +6,18 @@ import com.approval.backend.dto.request.CreateProcessNodeRequest;
 import com.approval.backend.dto.request.CreateProcessRequest;
 import com.approval.backend.dto.response.ProcessDefinitionResponse;
 import com.approval.backend.entity.ProcessDefinition;
+import com.approval.backend.entity.ProcessInstance;
 import com.approval.backend.entity.ProcessNode;
 import com.approval.backend.entity.Role;
 import com.approval.backend.mapper.ProcessDefinitionMapper;
+import com.approval.backend.mapper.ProcessInstanceMapper;
 import com.approval.backend.mapper.ProcessNodeMapper;
 import com.approval.backend.mapper.RoleMapper;
 import com.approval.backend.service.ProcessDefinitionService;
 import com.approval.backend.dto.response.ProcessNodeResponse;
 import com.approval.backend.dto.response.ProcessDefinitionDetailResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -34,11 +37,13 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     private final ProcessDefinitionMapper processDefinitionMapper;
     private final ProcessNodeMapper processNodeMapper;
     private final RoleMapper roleMapper;
+    private final ProcessInstanceMapper processInstanceMapper;
 
-    public ProcessDefinitionServiceImpl(ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, RoleMapper roleMapper) {
+    public ProcessDefinitionServiceImpl(ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, RoleMapper roleMapper, ProcessInstanceMapper processInstanceMapper) {
         this.processDefinitionMapper = processDefinitionMapper;
         this.processNodeMapper = processNodeMapper;
         this.roleMapper = roleMapper;
+        this.processInstanceMapper = processInstanceMapper;
     }
 
     /**
@@ -110,6 +115,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
     /**
      * 新增流程
+     *
      * @param createProcessRequest 新增流程请求数据传输对象
      * @return 流程定义响应数据传输对象
      */
@@ -130,25 +136,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         }
 
         for (CreateProcessNodeRequest node : createProcessRequest.getNodes()) {
-            String assigneeType = node.getAssigneeType();
-            String assigneeExpr = node.getAssigneeExpr();
-
-            if ("RELATIVE".equals(assigneeType)) {
-                if (!assigneeExpr.matches("^manager_id(\\.manager_id){0,2}$")) {
-                    throw new BusinessException(400, "分配目标值格式错误，必须是 manager_id 或上级链");
-                }
-            } else if ("USER".equals(assigneeType)) {
-                if (!assigneeExpr.matches("^\\d+$")) {
-                    throw new BusinessException(400, "分配目标值格式错误，必须是数字用户ID");
-                }
-            } else if ("ROLE".equals(assigneeType)) {
-                Role role = roleMapper.selectOne(new LambdaQueryWrapper<Role>().eq(Role::getCode, assigneeExpr));
-                if (role == null) {
-                    throw new BusinessException(400, "分配目标值格式错误，角色编码不存在");
-                }
-            } else {
-                throw new BusinessException(400, "分配策略无效");
-            }
+            validateNode(node);
         }
 
         ProcessDefinition processDefinition = new ProcessDefinition();
@@ -159,18 +147,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinitionMapper.insert(processDefinition);
 
         List<ProcessNode> processNodes = createProcessRequest.getNodes().stream()
-                .map(node -> {
-                            ProcessNode processNode = new ProcessNode();
-                            processNode.setDefinitionId(processDefinition.getId());
-                            processNode.setNodeName(node.getNodeName());
-                            processNode.setNodeOrder(node.getNodeOrder());
-                            processNode.setAssigneeType(node.getAssigneeType());
-                            processNode.setAssigneeExpr(node.getAssigneeExpr());
-                            processNode.setConditionExpr(node.getConditionExpr());
-
-                            return processNode;
-                        }
-                )
+                .map(node -> convertToNodeEntity(node, processDefinition.getId()))
                 .toList();
 
         Set<Integer> existingOrder = new HashSet<>();
@@ -185,6 +162,80 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         }
 
         return convertToDefinitionResponse(processDefinition);
+
+    }
+
+    /**
+     * 编辑流程
+     *
+     * @param id                   流程定义ID
+     * @param createProcessRequest 编辑流程请求数据传输对象
+     * @return 流程定义响应数据传输对象
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ProcessDefinitionResponse updateProcess(Long id, CreateProcessRequest createProcessRequest) {
+        ProcessDefinition existingDefinition = processDefinitionMapper.selectById(id);
+        if (existingDefinition == null) {
+            throw new BusinessException(400, "流程不存在");
+        }
+
+        long count = processInstanceMapper.selectCount(new LambdaQueryWrapper<ProcessInstance>()
+                .eq(ProcessInstance::getDefinitionId, id)
+                .eq(ProcessInstance::getStatus, 1));
+        if (count > 0) {
+            throw new BusinessException(400, "当前流程有进行中的审批，无法编辑");
+        }
+
+        ProcessDefinition existingProcessName = processDefinitionMapper.selectOne(
+                new LambdaQueryWrapper<ProcessDefinition>()
+                        .eq(ProcessDefinition::getName, createProcessRequest.getName())
+                        .ne(ProcessDefinition::getId, id)
+        );
+        if (existingProcessName != null) {
+            throw new BusinessException(400, "流程名称已存在");
+        }
+
+        Role existingRoleCode = roleMapper.selectOne(
+                new LambdaQueryWrapper<Role>()
+                        .eq(Role::getCode, createProcessRequest.getRoleCode())
+        );
+        if (existingRoleCode == null) {
+            throw new BusinessException(400, "适用角色编码无效");
+        }
+
+        for (CreateProcessNodeRequest node : createProcessRequest.getNodes()) {
+            validateNode(node);
+        }
+
+        List<ProcessNode> processNodes = createProcessRequest.getNodes().stream()
+                .map(node -> convertToNodeEntity(node, id))
+                .toList();
+
+        Set<Integer> existingOrder = new HashSet<>();
+        boolean hasDuplicateOrder = processNodes.stream()
+                .anyMatch(node -> !existingOrder.add(node.getNodeOrder()));
+        if (hasDuplicateOrder) {
+            throw new BusinessException(400, "节点顺序不能重复");
+        }
+
+        processDefinitionMapper.update(null, new LambdaUpdateWrapper<ProcessDefinition>()
+                .eq(ProcessDefinition::getId, id)
+                .set(ProcessDefinition::getName, createProcessRequest.getName())
+                .set(ProcessDefinition::getRoleCode, createProcessRequest.getRoleCode())
+                .set(ProcessDefinition::getVersion, existingDefinition.getVersion() + 1)
+        );
+
+        processNodeMapper.delete(new LambdaQueryWrapper<ProcessNode>()
+                .eq(ProcessNode::getDefinitionId, id));
+
+        for (ProcessNode processNode : processNodes) {
+            processNodeMapper.insert(processNode);
+        }
+
+        ProcessDefinition updatedProcessDefinition = processDefinitionMapper.selectById(id);
+
+        return convertToDefinitionResponse(updatedProcessDefinition);
 
     }
 
@@ -211,4 +262,48 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         BeanUtils.copyProperties(processNode, processNodeResponse);
         return processNodeResponse;
     }
+
+    /**
+     * 转换为流程节点实体对象
+     *
+     * @param node         流程节点
+     * @param definitionId 流程定义ID
+     * @return 流程节点实体对象
+     */
+    private ProcessNode convertToNodeEntity(CreateProcessNodeRequest node, Long definitionId) {
+        ProcessNode processNode = new ProcessNode();
+        processNode.setDefinitionId(definitionId);
+        processNode.setNodeName(node.getNodeName());
+        processNode.setNodeOrder(node.getNodeOrder());
+        processNode.setAssigneeType(node.getAssigneeType());
+        processNode.setAssigneeExpr(node.getAssigneeExpr());
+        processNode.setConditionExpr(node.getConditionExpr());
+        return processNode;
+    }
+
+    /**
+     * 校验节点分配策略与目标值
+     */
+    private void validateNode(CreateProcessNodeRequest node) {
+        String assigneeType = node.getAssigneeType();
+        String assigneeExpr = node.getAssigneeExpr();
+
+        if ("RELATIVE".equals(assigneeType)) {
+            if (!assigneeExpr.matches("^manager_id(\\.manager_id){0,2}$")) {
+                throw new BusinessException(400, "分配目标值格式错误，必须是 manager_id 或上级链");
+            }
+        } else if ("USER".equals(assigneeType)) {
+            if (!assigneeExpr.matches("^\\d+$")) {
+                throw new BusinessException(400, "分配目标值格式错误，必须是数字用户ID");
+            }
+        } else if ("ROLE".equals(assigneeType)) {
+            Role role = roleMapper.selectOne(new LambdaQueryWrapper<Role>().eq(Role::getCode, assigneeExpr));
+            if (role == null) {
+                throw new BusinessException(400, "分配目标值格式错误，角色编码不存在");
+            }
+        } else {
+            throw new BusinessException(400, "分配策略无效");
+        }
+    }
+
 }

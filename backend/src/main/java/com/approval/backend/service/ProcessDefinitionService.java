@@ -35,4 +35,13 @@ public interface ProcessDefinitionService {
      * @return 流程定义响应数据传输对象
      */
     ProcessDefinitionResponse createProcess(CreateProcessRequest createProcessRequest);
+
+    /**
+     * 编辑流程
+     *
+     * @param id                   流程定义ID
+     * @param createProcessRequest 编辑流程请求数据传输对象
+     * @return 流程定义响应数据传输对象
+     */
+    ProcessDefinitionResponse updateProcess(Long id, CreateProcessRequest createProcessRequest);
 }

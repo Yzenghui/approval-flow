@@ -12,6 +12,7 @@ public class ProcessDefinitionResponse {
     private Long id;
     private String name;
     private Integer version;
+    private String roleCode;
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

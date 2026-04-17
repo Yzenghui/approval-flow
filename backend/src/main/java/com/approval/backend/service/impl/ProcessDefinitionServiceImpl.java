@@ -124,6 +124,11 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             throw new BusinessException(400, "流程名称已存在");
         }
 
+        Role existingRoleCode = roleMapper.selectOne(new LambdaQueryWrapper<Role>().eq(Role::getCode, createProcessRequest.getRoleCode()));
+        if (existingRoleCode == null) {
+            throw new BusinessException(400, "适用角色编码无效");
+        }
+
         for (CreateProcessNodeRequest node : createProcessRequest.getNodes()) {
             String assigneeType = node.getAssigneeType();
             String assigneeExpr = node.getAssigneeExpr();
@@ -149,6 +154,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         ProcessDefinition processDefinition = new ProcessDefinition();
         processDefinition.setName(createProcessRequest.getName());
         processDefinition.setVersion(1);
+        processDefinition.setRoleCode(createProcessRequest.getRoleCode());
         processDefinition.setStatus(1);
         processDefinitionMapper.insert(processDefinition);
 

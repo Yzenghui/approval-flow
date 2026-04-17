@@ -16,6 +16,7 @@ public class ProcessDefinition {
 
     private String name;
     private Integer version;
+    private String roleCode;
     private Integer status;
 
     @TableField(fill = FieldFill.INSERT)

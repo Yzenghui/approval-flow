@@ -14,6 +14,9 @@ public class CreateProcessRequest {
     @NotBlank(message = "流程名称不能为空")
     private String name;
 
+    @NotBlank(message = "适用角色编码不能为空")
+    private String roleCode;
+
     @NotEmpty(message = "至少需要一个审批节点")
     private List<CreateProcessNodeRequest> nodes;
 }

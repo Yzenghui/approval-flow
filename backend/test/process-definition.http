@@ -125,17 +125,18 @@ Content-Type: application/json
 Authorization: {{admin_token}}
 
 {
-  "name": "采购申请流程",
+  "name": "员工采购申请流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
-      "nodeName": "一级审批",
+      "nodeName": "主管审批",
       "nodeOrder": 1,
       "assigneeType": "RELATIVE",
       "assigneeExpr": "manager_id",
       "conditionExpr": "amount <= 1000"
     },
     {
-      "nodeName": "二级审批",
+      "nodeName": "经理审批",
       "nodeOrder": 2,
       "assigneeType": "RELATIVE",
       "assigneeExpr": "manager_id.manager_id",
@@ -150,10 +151,11 @@ Content-Type: application/json
 Authorization: {{admin_token}}
 
 {
-  "name": "报销流程",
+  "name": "员工报销流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
-      "nodeName": "一级审批",
+      "nodeName": "主管审批",
       "nodeOrder": 1,
       "assigneeType": "RELATIVE",
       "assigneeExpr": "manager_id",
@@ -169,6 +171,7 @@ Authorization: {{admin_token}}
 
 {
   "name": "测试重复顺序流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
       "nodeName": "节点 A",
@@ -194,9 +197,10 @@ Authorization: {{admin_token}}
 
 {
   "name": "测试无效策略流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
-      "nodeName": "一级审批",
+      "nodeName": "主管审批",
       "nodeOrder": 1,
       "assigneeType": "INVALID",
       "assigneeExpr": "test",
@@ -212,9 +216,10 @@ Authorization: {{admin_token}}
 
 {
   "name": "测试 RELATIVE 格式错误流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
-      "nodeName": "一级审批",
+      "nodeName": "主管审批",
       "nodeOrder": 1,
       "assigneeType": "RELATIVE",
       "assigneeExpr": "manager",
@@ -230,9 +235,10 @@ Authorization: {{admin_token}}
 
 {
   "name": "测试 USER 格式错误流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
-      "nodeName": "一级审批",
+      "nodeName": "主管审批",
       "nodeOrder": 1,
       "assigneeType": "USER",
       "assigneeExpr": "abc123",
@@ -248,9 +254,10 @@ Authorization: {{admin_token}}
 
 {
   "name": "测试 ROLE 编码不存在流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
-      "nodeName": "一级审批",
+      "nodeName": "主管审批",
       "nodeOrder": 1,
       "assigneeType": "ROLE",
       "assigneeExpr": "INVALID_ROLE",
@@ -266,6 +273,7 @@ Authorization: {{admin_token}}
 
 {
   "name": "测试空节点流程",
+  "roleCode": "STAFF",
   "nodes": []
 }
 
@@ -276,9 +284,29 @@ Authorization: {{admin_token}}
 
 {
   "name": "",
+  "roleCode": "STAFF",
   "nodes": [
     {
-      "nodeName": "一级审批",
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 新增流程 - roleCode 为空
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试 roleCode 为空流程",
+  "roleCode": "",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
       "nodeOrder": 1,
       "assigneeType": "RELATIVE",
       "assigneeExpr": "manager_id",
@@ -293,9 +321,10 @@ Content-Type: application/json
 
 {
   "name": "测试未登录流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
-      "nodeName": "一级审批",
+      "nodeName": "主管审批",
       "nodeOrder": 1,
       "assigneeType": "RELATIVE",
       "assigneeExpr": "manager_id",
@@ -322,9 +351,10 @@ Authorization: {{user_token}}
 
 {
   "name": "测试权限流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
-      "nodeName": "一级审批",
+      "nodeName": "主管审批",
       "nodeOrder": 1,
       "assigneeType": "RELATIVE",
       "assigneeExpr": "manager_id",
@@ -332,6 +362,7 @@ Authorization: {{user_token}}
     }
   ]
 }
+
 
 
 

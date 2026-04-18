@@ -26,7 +26,7 @@ public interface ProcessDefinitionService {
      * @param id 流程定义ID
      * @return 流程详情
      */
-    ProcessDefinitionDetailResponse getDefinitionDetail(Long id);
+    ProcessDefinitionDetailResponse getProcessDefinitionDetail(Long id);
 
     /**
      * 新增流程
@@ -44,4 +44,18 @@ public interface ProcessDefinitionService {
      * @return 流程定义响应数据传输对象
      */
     ProcessDefinitionResponse updateProcess(Long id, CreateProcessRequest createProcessRequest);
+
+    /**
+     * 启用流程
+     *
+     * @param id 流程定义ID
+     */
+    void enableProcess(Long id);
+
+    /**
+     * 禁用流程
+     *
+     * @param id 流程定义ID
+     */
+    void disableProcess(Long id);
 }

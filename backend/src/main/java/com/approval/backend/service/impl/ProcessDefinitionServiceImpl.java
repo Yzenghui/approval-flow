@@ -89,7 +89,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
      * @return 流程定义详情
      */
     @Override
-    public ProcessDefinitionDetailResponse getDefinitionDetail(Long id) {
+    public ProcessDefinitionDetailResponse getProcessDefinitionDetail(Long id) {
         ProcessDefinition processDefinition = processDefinitionMapper.selectById(id);
         if (processDefinition == null) {
             throw new BusinessException(400, "流程不存在");
@@ -237,6 +237,42 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         return convertToDefinitionResponse(updatedProcessDefinition);
 
+    }
+
+    /**
+     * 启用流程
+     *
+     * @param id 流程定义ID
+     */
+    @Override
+    public void enableProcess(Long id) {
+        ProcessDefinition processDefinition = processDefinitionMapper.selectById(id);
+        if (processDefinition == null) {
+            throw new BusinessException(400, "流程不存在");
+        }
+
+        processDefinitionMapper.update(null, new LambdaUpdateWrapper<ProcessDefinition>()
+                .eq(ProcessDefinition::getId, id)
+                .set(ProcessDefinition::getStatus, 1)
+        );
+    }
+
+    /**
+     * 禁用流程
+     *
+     * @param id 流程定义ID
+     */
+    @Override
+    public void disableProcess(Long id) {
+        ProcessDefinition processDefinition = processDefinitionMapper.selectById(id);
+        if (processDefinition == null) {
+            throw new BusinessException(400, "流程不存在");
+        }
+
+        processDefinitionMapper.update(null, new LambdaUpdateWrapper<ProcessDefinition>()
+                .eq(ProcessDefinition::getId, id)
+                .set(ProcessDefinition::getStatus, 0)
+        );
     }
 
     /**

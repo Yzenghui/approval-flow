@@ -65,8 +65,8 @@ public class ProcessDefinitionController {
     @GetMapping("/definitions/{id}")
     @SaCheckLogin
     @SaCheckRole("ADMIN")
-    public Result<?> getDefinitionDetail(@PathVariable Long id) {
-        ProcessDefinitionDetailResponse processDefinitionDetailResponse = processDefinitionService.getDefinitionDetail(id);
+    public Result<?> getProcessDefinitionDetail(@PathVariable Long id) {
+        ProcessDefinitionDetailResponse processDefinitionDetailResponse = processDefinitionService.getProcessDefinitionDetail(id);
         return Result.success(processDefinitionDetailResponse);
     }
 
@@ -97,5 +97,31 @@ public class ProcessDefinitionController {
     public Result<?> updateProcess(@PathVariable Long id, @RequestBody @Valid CreateProcessRequest createProcessRequest) {
         ProcessDefinitionResponse processDefinitionResponse = processDefinitionService.updateProcess(id, createProcessRequest);
         return Result.success(processDefinitionResponse);
+    }
+
+    /**
+     * 启用流程
+     *
+     * @param id 流程定义ID
+     */
+    @PutMapping("/definitions/{id}/enable")
+    @SaCheckLogin
+    @SaCheckRole("ADMIN")
+    public Result<?> enableProcess(@PathVariable Long id) {
+        processDefinitionService.enableProcess(id);
+        return Result.success(null);
+    }
+
+    /**
+     * 禁用流程
+     *
+     * @param id 流程定义ID
+     */
+    @PutMapping("/definitions/{id}/disable")
+    @SaCheckLogin
+    @SaCheckRole("ADMIN")
+    public Result<?> disableProcess(@PathVariable Long id) {
+        processDefinitionService.disableProcess(id);
+        return Result.success(null);
     }
 }

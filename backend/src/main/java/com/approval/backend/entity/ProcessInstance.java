@@ -15,6 +15,7 @@ public class ProcessInstance {
     private Long id;
 
     private Long definitionId;
+    private String definitionName;
     private Long initiatorId;
     private String formData;
     private Integer submitCount;

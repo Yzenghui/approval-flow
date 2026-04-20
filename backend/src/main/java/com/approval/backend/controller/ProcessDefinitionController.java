@@ -35,7 +35,7 @@ public class ProcessDefinitionController {
     @GetMapping("/definitions")
     @SaCheckLogin
     @SaCheckRole("ADMIN")
-    public Result<?> listDefinitions(
+    public Result<?> listProcessDefinitions(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String keyword,
@@ -51,7 +51,7 @@ public class ProcessDefinitionController {
             pageSize = 100;
         }
 
-        PageResult<ProcessDefinitionResponse> result = processDefinitionService.listDefinitions(pageNum, pageSize, keyword, status);
+        PageResult<ProcessDefinitionResponse> result = processDefinitionService.listProcessDefinitions(pageNum, pageSize, keyword, status);
 
         return Result.success(result);
     }

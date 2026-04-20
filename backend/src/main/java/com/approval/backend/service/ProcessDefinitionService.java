@@ -18,7 +18,7 @@ public interface ProcessDefinitionService {
      * @param status   状态
      * @return 分页结果
      */
-    PageResult<ProcessDefinitionResponse> listDefinitions(Integer pageNum, Integer pageSize, String keyword, Integer status);
+    PageResult<ProcessDefinitionResponse> listProcessDefinitions(Integer pageNum, Integer pageSize, String keyword, Integer status);
 
     /**
      * 获取流程详情

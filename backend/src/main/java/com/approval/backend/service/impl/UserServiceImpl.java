@@ -1,6 +1,7 @@
 package com.approval.backend.service.impl;
 
 import cn.dev33.satoken.secure.BCrypt;
+import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.*;
@@ -189,6 +190,8 @@ public class UserServiceImpl implements UserService {
         }
         Long roleId = role.getId();
 
+        Integer oldStatus = user.getStatus();
+
         userMapper.update(null, new LambdaUpdateWrapper<User>()
                 .eq(User::getId, id)
                 .set(User::getName, updateUserRequest.getName())
@@ -196,6 +199,10 @@ public class UserServiceImpl implements UserService {
                 .set(User::getRoleId, roleId)
                 .set(User::getStatus, updateUserRequest.getStatus())
         );
+
+        if (oldStatus == 1 && updateUserRequest.getStatus() == 0) {
+            StpUtil.kickout(id);
+        }
     }
 
     /**

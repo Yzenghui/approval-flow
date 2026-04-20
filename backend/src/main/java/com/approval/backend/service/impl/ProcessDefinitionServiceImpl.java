@@ -56,7 +56,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
      * @return 流程定义列表
      */
     @Override
-    public PageResult<ProcessDefinitionResponse> listDefinitions(Integer pageNum, Integer pageSize, String keyword, Integer status) {
+    public PageResult<ProcessDefinitionResponse> listProcessDefinitions(Integer pageNum, Integer pageSize, String keyword, Integer status) {
         LambdaQueryWrapper<ProcessDefinition> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
             wrapper.like(ProcessDefinition::getName, keyword);
@@ -75,7 +75,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         pageResult.setTotal(processDefinitionPage.getTotal());
         pageResult.setRecords(processDefinitionPage.getRecords()
                 .stream()
-                .map(this::convertToDefinitionResponse)
+                .map(this::convertToProcessDefinitionResponse)
                 .collect(Collectors.toList())
         );
 
@@ -102,11 +102,11 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         List<ProcessNode> processNodes = processNodeMapper.selectList(wrapper);
 
         List<ProcessNodeResponse> processNodeResponses = processNodes.stream()
-                .map(this::convertToNodeResponse)
+                .map(this::convertToProcessNodeResponse)
                 .collect(Collectors.toList());
 
         ProcessDefinitionDetailResponse processDefinitionDetailResponse = new ProcessDefinitionDetailResponse();
-        BeanUtils.copyProperties(convertToDefinitionResponse(processDefinition), processDefinitionDetailResponse);
+        BeanUtils.copyProperties(convertToProcessDefinitionResponse(processDefinition), processDefinitionDetailResponse);
         processDefinitionDetailResponse.setNodes(processNodeResponses);
 
         return processDefinitionDetailResponse;
@@ -161,7 +161,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             processNodeMapper.insert(processNode);
         }
 
-        return convertToDefinitionResponse(processDefinition);
+        return convertToProcessDefinitionResponse(processDefinition);
 
     }
 
@@ -235,7 +235,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         ProcessDefinition updatedProcessDefinition = processDefinitionMapper.selectById(id);
 
-        return convertToDefinitionResponse(updatedProcessDefinition);
+        return convertToProcessDefinitionResponse(updatedProcessDefinition);
 
     }
 
@@ -281,7 +281,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
      * @param processDefinition 流程定义
      * @return 流程定义响应对象
      */
-    private ProcessDefinitionResponse convertToDefinitionResponse(ProcessDefinition processDefinition) {
+    private ProcessDefinitionResponse convertToProcessDefinitionResponse(ProcessDefinition processDefinition) {
         ProcessDefinitionResponse processDefinitionResponse = new ProcessDefinitionResponse();
         BeanUtils.copyProperties(processDefinition, processDefinitionResponse);
         return processDefinitionResponse;
@@ -293,7 +293,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
      * @param processNode 流程节点
      * @return 流程节点响应对象
      */
-    private ProcessNodeResponse convertToNodeResponse(ProcessNode processNode) {
+    private ProcessNodeResponse convertToProcessNodeResponse(ProcessNode processNode) {
         ProcessNodeResponse processNodeResponse = new ProcessNodeResponse();
         BeanUtils.copyProperties(processNode, processNodeResponse);
         return processNodeResponse;

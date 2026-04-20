@@ -1,0 +1,25 @@
+### ========================================
+### 可用流程列表测试
+### ========================================
+
+### 登录获取 Token（zhangsan - 员工角色）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 获取可用流程列表 - 默认分页（使用员工账号）
+GET http://localhost:8080/api/user/available-definitions
+Authorization: {{user_token}}
+
+### 获取可用流程列表 - 指定页码和数量
+GET http://localhost:8080/api/user/available-definitions?pageNum=1&pageSize=5
+Authorization: {{user_token}}
+
+### 获取可用流程列表 - 未登录（应返回 401）
+GET http://localhost:8080/api/user/available-definitions

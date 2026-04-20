@@ -5,6 +5,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
 import com.approval.backend.dto.request.CreateDraftRequest;
+import com.approval.backend.dto.request.UpdateDraftRequest;
 import com.approval.backend.dto.response.AvailableProcessResponse;
 import com.approval.backend.dto.response.CreateDraftResponse;
 import com.approval.backend.service.ProcessInstanceService;
@@ -50,6 +51,7 @@ public class ProcessInstanceController {
 
     /**
      * 新建草稿
+     *
      * @param createDraftRequest 新建草稿请求数据传输对象
      * @return 新建草稿响应数据传输对象
      */
@@ -58,5 +60,18 @@ public class ProcessInstanceController {
     public Result<?> createDraft(@RequestBody @Valid CreateDraftRequest createDraftRequest) {
         CreateDraftResponse createDraftResponse = processInstanceService.createDraft(createDraftRequest);
         return Result.success(createDraftResponse);
+    }
+
+    /**
+     * 修改草稿
+     *
+     * @param instanceId         草稿ID
+     * @param updateDraftRequest 修改草稿请求数据传输对象
+     */
+    @PutMapping("/drafts/{instanceId}")
+    @SaCheckLogin
+    public Result<?> updateDraft(@PathVariable Long instanceId, @RequestBody @Valid UpdateDraftRequest updateDraftRequest) {
+        processInstanceService.updateDraft(instanceId, updateDraftRequest.getFormData());
+        return Result.success(null);
     }
 }

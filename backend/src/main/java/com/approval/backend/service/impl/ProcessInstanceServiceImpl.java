@@ -15,6 +15,7 @@ import com.approval.backend.mapper.RoleMapper;
 import com.approval.backend.mapper.UserMapper;
 import com.approval.backend.service.ProcessInstanceService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 
@@ -107,6 +108,33 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         createDraftResponse.setInstanceId(processInstance.getId());
 
         return createDraftResponse;
+    }
+
+    /**
+     * 修改草稿
+     *
+     * @param id       草稿ID
+     * @param formData 表单数据
+     */
+    @Override
+    public void updateDraft(Long id, String formData) {
+        ProcessInstance existingDraft = processInstanceMapper.selectById(id);
+        if (existingDraft == null) {
+            throw new BusinessException(400, "草稿不存在");
+        }
+
+        if (existingDraft.getStatus() != 0) {
+            throw new BusinessException(400, "只有草稿状态可修改");
+        }
+
+        if (!existingDraft.getInitiatorId().equals(StpUtil.getLoginIdAsLong())) {
+            throw new BusinessException(400, "无权修改此草稿");
+        }
+
+        processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
+                .eq(ProcessInstance::getId, id)
+                .set(ProcessInstance::getFormData, formData)
+        );
     }
 
 }

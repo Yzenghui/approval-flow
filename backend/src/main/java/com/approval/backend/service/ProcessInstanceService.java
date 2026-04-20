@@ -27,4 +27,11 @@ public interface ProcessInstanceService {
      */
     CreateDraftResponse createDraft(CreateDraftRequest createDraftRequest);
 
+    /**
+     * 修改草稿
+     *
+     * @param id       草稿ID
+     * @param formData 表单数据
+     */
+    void updateDraft(Long id, String formData);
 }

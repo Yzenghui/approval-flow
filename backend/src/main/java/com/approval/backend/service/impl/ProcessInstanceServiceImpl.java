@@ -1,11 +1,16 @@
 package com.approval.backend.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.dto.request.CreateDraftRequest;
 import com.approval.backend.dto.response.AvailableProcessResponse;
+import com.approval.backend.dto.response.CreateDraftResponse;
 import com.approval.backend.entity.ProcessDefinition;
+import com.approval.backend.entity.ProcessInstance;
 import com.approval.backend.entity.User;
 import com.approval.backend.mapper.ProcessDefinitionMapper;
+import com.approval.backend.mapper.ProcessInstanceMapper;
 import com.approval.backend.mapper.RoleMapper;
 import com.approval.backend.mapper.UserMapper;
 import com.approval.backend.service.ProcessInstanceService;
@@ -21,11 +26,13 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
     private final ProcessDefinitionMapper processDefinitionMapper;
+    private final ProcessInstanceMapper processInstanceMapper;
 
-    public ProcessInstanceServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessDefinitionMapper processDefinitionMapper) {
+    public ProcessInstanceServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessDefinitionMapper processDefinitionMapper, ProcessInstanceMapper processInstanceMapper) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.processDefinitionMapper = processDefinitionMapper;
+        this.processInstanceMapper = processInstanceMapper;
     }
 
     /**
@@ -69,6 +76,37 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .toList());
 
         return pageResult;
+    }
+
+    /**
+     * 新建草稿
+     *
+     * @param createDraftRequest 新建草稿请求数据传输对象
+     * @return 新建草稿响应数据传输对象
+     */
+    @Override
+    public CreateDraftResponse createDraft(CreateDraftRequest createDraftRequest) {
+        ProcessDefinition existingProcess = processDefinitionMapper.selectOne(new LambdaQueryWrapper<ProcessDefinition>()
+                .eq(ProcessDefinition::getId, createDraftRequest.getDefinitionId())
+                .eq(ProcessDefinition::getStatus, 1)
+        );
+        if (existingProcess == null) {
+            throw new BusinessException(400, "流程不存在或已禁用");
+        }
+
+        ProcessInstance processInstance = new ProcessInstance();
+        processInstance.setDefinitionId(existingProcess.getId());
+        processInstance.setDefinitionName(existingProcess.getName());
+        processInstance.setInitiatorId(StpUtil.getLoginIdAsLong());
+        processInstance.setFormData(createDraftRequest.getFormData());
+        processInstance.setSubmitCount(1);
+        processInstance.setStatus(0);
+        processInstanceMapper.insert(processInstance);
+
+        CreateDraftResponse createDraftResponse = new CreateDraftResponse();
+        createDraftResponse.setInstanceId(processInstance.getId());
+
+        return createDraftResponse;
     }
 
 }

@@ -23,3 +23,66 @@ Authorization: {{user_token}}
 
 ### 获取可用流程列表 - 未登录（应返回 401）
 GET http://localhost:8080/api/user/available-definitions
+
+### ========================================
+### 新建草稿功能测试
+### ========================================
+
+### 登录获取 Token（zhangsan - 员工角色）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 新建草稿 - 正常创建（请假流程 ID=1）
+POST http://localhost:8080/api/user/drafts
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "definitionId": 1,
+  "formData": "{\"reason\": \"家里有事\", \"days\": 2}"
+}
+
+### 新建草稿 - 流程不存在或已禁用
+POST http://localhost:8080/api/user/drafts
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "definitionId": 999,
+  "formData": "{}"
+}
+
+### 新建草稿 - definitionId 为空
+POST http://localhost:8080/api/user/drafts
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "formData": "{\"reason\": \"测试\"}"
+}
+
+### 新建草稿 - formData 为空
+POST http://localhost:8080/api/user/drafts
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "definitionId": 1
+}
+
+
+### 新建草稿 - 未登录（应返回 401）
+POST http://localhost:8080/api/user/drafts
+Content-Type: application/json
+
+{
+  "definitionId": 1,
+  "formData": "{}"
+}

@@ -5,9 +5,11 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
 import com.approval.backend.dto.request.CreateDraftRequest;
+import com.approval.backend.dto.request.SubmitApplicationRequest;
 import com.approval.backend.dto.request.UpdateDraftRequest;
 import com.approval.backend.dto.response.AvailableProcessResponse;
 import com.approval.backend.dto.response.CreateDraftResponse;
+import com.approval.backend.dto.response.SubmitApplicationResponse;
 import com.approval.backend.service.ProcessInstanceService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -50,6 +52,19 @@ public class ProcessInstanceController {
     }
 
     /**
+     * 新建并提交申请
+     *
+     * @param submitApplicationRequest 新建并提交申请请求数据传输对象
+     * @return 新建并提交申请响应数据传输对象
+     */
+    @PostMapping("/instances")
+    @SaCheckLogin
+    public Result<?> submitApplication(@RequestBody @Valid SubmitApplicationRequest submitApplicationRequest) {
+        SubmitApplicationResponse submitApplicationResponse = processInstanceService.submitApplication(submitApplicationRequest);
+        return Result.success(submitApplicationResponse);
+    }
+
+    /**
      * 新建草稿
      *
      * @param createDraftRequest 新建草稿请求数据传输对象
@@ -74,4 +89,5 @@ public class ProcessInstanceController {
         processInstanceService.updateDraft(instanceId, updateDraftRequest.getFormData());
         return Result.success(null);
     }
+
 }

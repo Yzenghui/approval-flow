@@ -2,8 +2,10 @@ package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.CreateDraftRequest;
+import com.approval.backend.dto.request.SubmitApplicationRequest;
 import com.approval.backend.dto.response.AvailableProcessResponse;
 import com.approval.backend.dto.response.CreateDraftResponse;
+import com.approval.backend.dto.response.SubmitApplicationResponse;
 
 /**
  * 流程实例服务接口
@@ -18,6 +20,13 @@ public interface ProcessInstanceService {
      * @return 可用流程列表
      */
     PageResult<AvailableProcessResponse> listAvailableProcesses(Integer pageNum, Integer pageSize, Long id);
+
+    /**
+     * 新建并提交申请
+     * @param submitApplicationRequest 新建并提交申请请求数据传输对象
+     * @return 新建并提交申请响应数据传输对象
+     */
+    SubmitApplicationResponse submitApplication(SubmitApplicationRequest submitApplicationRequest);
 
     /**
      * 新建草稿

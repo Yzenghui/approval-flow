@@ -4,20 +4,26 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.CreateDraftRequest;
+import com.approval.backend.dto.request.SubmitApplicationRequest;
 import com.approval.backend.dto.response.AvailableProcessResponse;
 import com.approval.backend.dto.response.CreateDraftResponse;
-import com.approval.backend.entity.ProcessDefinition;
-import com.approval.backend.entity.ProcessInstance;
-import com.approval.backend.entity.User;
-import com.approval.backend.mapper.ProcessDefinitionMapper;
-import com.approval.backend.mapper.ProcessInstanceMapper;
-import com.approval.backend.mapper.RoleMapper;
-import com.approval.backend.mapper.UserMapper;
+import com.approval.backend.dto.response.SubmitApplicationResponse;
+import com.approval.backend.entity.*;
+import com.approval.backend.mapper.*;
 import com.approval.backend.service.ProcessInstanceService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.googlecode.aviator.AviatorEvaluator;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 流程实例服务具体实现类
@@ -27,13 +33,19 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
     private final ProcessDefinitionMapper processDefinitionMapper;
+    private final ProcessNodeMapper processNodeMapper;
     private final ProcessInstanceMapper processInstanceMapper;
+    private final TaskMapper taskMapper;
+    private final ApprovalRecordMapper approvalRecordMapper;
 
-    public ProcessInstanceServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessDefinitionMapper processDefinitionMapper, ProcessInstanceMapper processInstanceMapper) {
+    public ProcessInstanceServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.processDefinitionMapper = processDefinitionMapper;
+        this.processNodeMapper = processNodeMapper;
         this.processInstanceMapper = processInstanceMapper;
+        this.taskMapper = taskMapper;
+        this.approvalRecordMapper = approvalRecordMapper;
     }
 
     /**
@@ -77,6 +89,48 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .toList());
 
         return pageResult;
+    }
+
+    /**
+     * 新建并提交申请
+     *
+     * @param submitApplicationRequest 新建并提交申请请求数据传输对象
+     * @return 新建并提交申请响应数据传输对象
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public SubmitApplicationResponse submitApplication(SubmitApplicationRequest submitApplicationRequest) {
+        ProcessDefinition existingProcess = processDefinitionMapper.selectOne(new LambdaQueryWrapper<ProcessDefinition>()
+                .eq(ProcessDefinition::getId, submitApplicationRequest.getDefinitionId())
+                .eq(ProcessDefinition::getStatus, 1)
+        );
+        if (existingProcess == null) {
+            throw new BusinessException(400, "流程不存在或已禁用");
+        }
+
+        ProcessInstance processInstance = new ProcessInstance();
+        processInstance.setDefinitionId(existingProcess.getId());
+        processInstance.setDefinitionName(existingProcess.getName());
+        processInstance.setInitiatorId(StpUtil.getLoginIdAsLong());
+        processInstance.setFormData(submitApplicationRequest.getFormData());
+        processInstance.setSubmitCount(1);
+        processInstance.setStatus(1);
+        processInstanceMapper.insert(processInstance);
+
+        startApprovalProcess(processInstance, existingProcess);
+
+        ApprovalRecord record = new ApprovalRecord();
+        record.setInstanceId(processInstance.getId());
+        record.setOperatorId(processInstance.getInitiatorId());
+        record.setTaskId(null);
+        record.setAction(0);
+        record.setRemark(null);
+        approvalRecordMapper.insert(record);
+
+        SubmitApplicationResponse submitApplicationResponse = new SubmitApplicationResponse();
+        submitApplicationResponse.setInstanceId(processInstance.getId());
+
+        return submitApplicationResponse;
     }
 
     /**
@@ -135,6 +189,78 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .eq(ProcessInstance::getId, id)
                 .set(ProcessInstance::getFormData, formData)
         );
+    }
+
+    /**
+     * 启动审批流程
+     *
+     * @param processInstance   流程实例
+     * @param processDefinition 流程定义
+     */
+    void startApprovalProcess(ProcessInstance processInstance, ProcessDefinition processDefinition) {
+        List<ProcessNode> processNodes = processNodeMapper.selectList(
+                new LambdaQueryWrapper<ProcessNode>()
+                        .eq(ProcessNode::getDefinitionId, processDefinition.getId())
+                        .orderByAsc(ProcessNode::getNodeOrder)
+        );
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> env;
+        try {
+            env = objectMapper.readValue(processInstance.getFormData(), new TypeReference<>() {
+            });
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        for (ProcessNode processNode : processNodes) {
+            User currentUser = userMapper.selectById(processInstance.getInitiatorId());
+
+            if (processNode.getAssigneeType().equals("RELATIVE")) {
+                String conditionExpr = processNode.getConditionExpr();
+                if (StringUtils.hasText(conditionExpr)) {
+                    Boolean satisfiled = (Boolean) AviatorEvaluator.execute(conditionExpr, env);
+                    if (!satisfiled) {
+                        continue;
+                    }
+                }
+
+                String[] levels = processNode.getAssigneeExpr().split("\\.");
+                for (int i = 0; i < levels.length; i++) {
+                    Long managerId = currentUser.getManagerId();
+                    if (managerId == null) {
+                        throw new BusinessException(400, "节点【" + processNode.getNodeName() + "】审批人无法确定");
+                    }
+                    currentUser = userMapper.selectById(managerId);
+                }
+            } else if (processNode.getAssigneeType().equals("USER")) {
+                currentUser = userMapper.selectById(processNode.getAssigneeExpr());
+            } else if (processNode.getAssigneeType().equals("ROLE")) {
+                Role role = roleMapper.selectOne(new LambdaQueryWrapper<Role>()
+                        .eq(Role::getCode, processNode.getAssigneeExpr()));
+                Long roleId = role.getId();
+                currentUser = userMapper.selectOne(new LambdaQueryWrapper<User>()
+                        .eq(User::getRoleId, roleId)
+                        .eq(User::getStatus, 1)
+                        .orderByAsc(User::getId)
+                        .last("LIMIT 1"));
+            }
+
+            if (currentUser == null || currentUser.getStatus() != 1) {
+                throw new BusinessException(400, "节点【" + processNode.getNodeName() + "】审批人无法确定");
+            }
+
+            Task task = new Task();
+            task.setInstanceId(processInstance.getId());
+            task.setNodeId(processNode.getId());
+            task.setNodeName(processNode.getNodeName());
+            task.setAssigneeId(currentUser.getId());
+            task.setSubmitCount(processInstance.getSubmitCount());
+            task.setStatus(0);
+            taskMapper.insert(task);
+
+            break;
+        }
     }
 
 }

@@ -102,4 +102,16 @@ public class ProcessInstanceController {
         return Result.success(null);
     }
 
+    /**
+     * 撤回申请
+     *
+     * @param instanceId 申请ID
+     */
+    @PostMapping("/instances/{instanceId}/withdraw")
+    @SaCheckLogin
+    public Result<?> withdrawApplication(@PathVariable Long instanceId) {
+        processInstanceService.withdrawApplication(instanceId);
+        return Result.success(null);
+    }
+
 }

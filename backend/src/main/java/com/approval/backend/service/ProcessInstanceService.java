@@ -23,6 +23,7 @@ public interface ProcessInstanceService {
 
     /**
      * 新建并提交申请
+     *
      * @param submitApplicationRequest 新建并提交申请请求数据传输对象
      * @return 新建并提交申请响应数据传输对象
      */
@@ -46,7 +47,15 @@ public interface ProcessInstanceService {
 
     /**
      * 提交草稿
+     *
      * @param id 草稿ID
      */
     void submitDraft(Long id);
+
+    /**
+     * 撤回申请
+     *
+     * @param id 申请ID
+     */
+    void withdrawApplication(Long id);
 }

@@ -255,3 +255,47 @@ Authorization: {{admin_token}}
 ### 提交草稿 - 未登录（应返回 401）
 POST http://localhost:8080/api/user/instances/1/submit
 
+### ========================================
+### 撤回申请功能测试
+### ========================================
+
+### 登录获取 Token（zhangsan - 员工角色）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 撤回申请 - 正常撤回（ID=2，状态从 1 变为 4）
+POST http://localhost:8080/api/user/instances/2/withdraw
+Authorization: {{user_token}}
+
+### 撤回申请 - 申请不存在
+POST http://localhost:8080/api/user/instances/999/withdraw
+Authorization: {{user_token}}
+
+### 撤回申请 - 重复撤回（尝试再次撤回已撤回的 ID=2）
+POST http://localhost:8080/api/user/instances/2/withdraw
+Authorization: {{user_token}}
+
+### 登录获取 Token（admin - 用于测试越权）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 撤回申请 - 越权撤回（使用 admin 尝试撤回 zhangsan 的申请 ID=2）
+POST http://localhost:8080/api/user/instances/2/withdraw
+Authorization: {{admin_token}}
+
+### 撤回申请 - 未登录（应返回 401）
+POST http://localhost:8080/api/user/instances/2/withdraw

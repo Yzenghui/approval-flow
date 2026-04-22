@@ -237,6 +237,48 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     }
 
+    /**
+     * 撤回申请
+     *
+     * @param id 申请ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void withdrawApplication(Long id) {
+        ProcessInstance existingDraft = processInstanceMapper.selectById(id);
+        if (existingDraft == null) {
+            throw new BusinessException(400, "申请不存在");
+        }
+
+        if (existingDraft.getStatus() != 1) {
+            throw new BusinessException(400, "只有审批中的申请可撤回");
+        }
+
+        if (!existingDraft.getInitiatorId().equals(StpUtil.getLoginIdAsLong())) {
+            throw new BusinessException(400, "无权撤回此申请");
+        }
+
+        processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
+                .eq(ProcessInstance::getId, id)
+                .set(ProcessInstance::getStatus, 4)
+        );
+
+        taskMapper.update(null, new LambdaUpdateWrapper<Task>()
+                .eq(Task::getInstanceId, id)
+                .eq(Task::getStatus, 0)
+                .set(Task::getStatus, 2)
+        );
+
+        ApprovalRecord record = new ApprovalRecord();
+        record.setInstanceId(existingDraft.getId());
+        record.setOperatorId(existingDraft.getInitiatorId());
+        record.setTaskId(null);
+        record.setAction(3);
+        record.setRemark(null);
+        approvalRecordMapper.insert(record);
+
+    }
+
 
     /**
      * 启动审批流程：查找第一个满足条件的节点并生成任务

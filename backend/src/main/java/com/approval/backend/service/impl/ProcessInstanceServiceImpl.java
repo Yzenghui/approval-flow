@@ -192,12 +192,59 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     }
 
     /**
-     * 启动审批流程
+     * 提交草稿
+     *
+     * @param id 草稿ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void submitDraft(Long id) {
+        ProcessInstance existingDraft = processInstanceMapper.selectById(id);
+        if (existingDraft == null) {
+            throw new BusinessException(400, "申请不存在");
+        }
+
+        if (existingDraft.getStatus() != 0) {
+            throw new BusinessException(400, "只有草稿状态可提交");
+        }
+
+        if (!existingDraft.getInitiatorId().equals(StpUtil.getLoginIdAsLong())) {
+            throw new BusinessException(400, "无权提交此申请");
+        }
+
+        ProcessDefinition existingProcess = processDefinitionMapper.selectOne(new LambdaQueryWrapper<ProcessDefinition>()
+                .eq(ProcessDefinition::getId, existingDraft.getDefinitionId())
+                .eq(ProcessDefinition::getStatus, 1)
+        );
+        if (existingProcess == null) {
+            throw new BusinessException(400, "流程不存在或已禁用");
+        }
+
+        processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
+                .eq(ProcessInstance::getId, id)
+                .set(ProcessInstance::getStatus, 1)
+        );
+
+        startApprovalProcess(existingDraft, existingProcess);
+
+        ApprovalRecord record = new ApprovalRecord();
+        record.setInstanceId(existingDraft.getId());
+        record.setOperatorId(existingDraft.getInitiatorId());
+        record.setTaskId(null);
+        record.setAction(0);
+        record.setRemark(null);
+        approvalRecordMapper.insert(record);
+
+    }
+
+
+    /**
+     * 启动审批流程：查找第一个满足条件的节点并生成任务
      *
      * @param processInstance   流程实例
      * @param processDefinition 流程定义
      */
-    void startApprovalProcess(ProcessInstance processInstance, ProcessDefinition processDefinition) {
+    private void startApprovalProcess(ProcessInstance processInstance, ProcessDefinition processDefinition) {
         List<ProcessNode> processNodes = processNodeMapper.selectList(
                 new LambdaQueryWrapper<ProcessNode>()
                         .eq(ProcessNode::getDefinitionId, processDefinition.getId())

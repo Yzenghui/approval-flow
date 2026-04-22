@@ -43,4 +43,10 @@ public interface ProcessInstanceService {
      * @param formData 表单数据
      */
     void updateDraft(Long id, String formData);
+
+    /**
+     * 提交草稿
+     * @param id 草稿ID
+     */
+    void submitDraft(Long id);
 }

@@ -90,4 +90,16 @@ public class ProcessInstanceController {
         return Result.success(null);
     }
 
+    /**
+     * 提交草稿
+     *
+     * @param instanceId 草稿ID
+     */
+    @PostMapping("/instances/{instanceId}/submit")
+    @SaCheckLogin
+    public Result<?> submitDraft(@PathVariable Long instanceId) {
+        processInstanceService.submitDraft(instanceId);
+        return Result.success(null);
+    }
+
 }

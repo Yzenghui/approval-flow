@@ -25,71 +25,6 @@ Authorization: {{user_token}}
 GET http://localhost:8080/api/user/available-definitions
 
 ### ========================================
-### 新建并提交申请功能测试
-### ========================================
-
-### 登录获取 Token（zhangsan - 员工角色）
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "zhangsan",
-  "password": "123456"
-}
-
-> {% client.global.set("user_token", response.body.data.token); %}
-
-### 提交申请 - 正常提交（请假流程 ID=1）
-POST http://localhost:8080/api/user/instances
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "definitionId": 1,
-  "formData": "{\"reason\": \"年假休息\", \"days\": 2}"
-}
-
-### 提交申请 - 流程不存在或已禁用
-POST http://localhost:8080/api/user/instances
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "definitionId": 999,
-  "formData": "{}"
-}
-
-### 提交申请 - 审批人无法确定（例如：RELATIVE 策略但用户没有上级）
-POST http://localhost:8080/api/user/instances
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "definitionId": 1,
-  "formData": "{\"reason\": \"测试无上级情况\", \"days\": 10}"
-}
-
-### 提交申请 - formData 格式错误（非 JSON 字符串）
-POST http://localhost:8080/api/user/instances
-Content-Type: application/json
-Authorization: {{user_token}}
-
-{
-  "definitionId": 1,
-  "formData": "这不是一个合法的JSON"
-}
-
-### 提交申请 - 未登录（应返回 401）
-POST http://localhost:8080/api/user/instances
-Content-Type: application/json
-
-{
-  "definitionId": 1,
-  "formData": "{}"
-}
-
-
-### ========================================
 ### 新建草稿功能测试
 ### ========================================
 
@@ -199,4 +134,124 @@ Content-Type: application/json
 {
   "formData": "{}"
 }
+
+### ========================================
+### 新建并提交申请功能测试
+### ========================================
+
+### 登录获取 Token（zhangsan - 员工角色）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 提交申请 - 正常提交（请假流程 ID=1）
+POST http://localhost:8080/api/user/instances
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "definitionId": 1,
+  "formData": "{\"reason\": \"年假休息\", \"days\": 2}"
+}
+
+### 提交申请 - 流程不存在或已禁用
+POST http://localhost:8080/api/user/instances
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "definitionId": 999,
+  "formData": "{}"
+}
+
+### 提交申请 - 审批人无法确定（使用 admin 登录，通常管理员没有上级）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 提交申请 - 触发无上级异常（admin 没有 manager_id）
+POST http://localhost:8080/api/user/instances
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "definitionId": 1,
+  "formData": "{\"reason\": \"测试无上级情况\", \"days\": 2}"
+}
+
+### 提交申请 - formData 格式错误（非 JSON 字符串）
+POST http://localhost:8080/api/user/instances
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "definitionId": 1,
+  "formData": "这不是一个合法的JSON"
+}
+
+### 提交申请 - 未登录（应返回 401）
+POST http://localhost:8080/api/user/instances
+Content-Type: application/json
+
+{
+  "definitionId": 1,
+  "formData": "{}"
+}
+
+### ========================================
+### 提交草稿功能测试
+### ========================================
+
+### 登录获取 Token（zhangsan - 员工角色）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 提交草稿 - 正常提交（ID=1，状态从 0 变为 1）
+POST http://localhost:8080/api/user/instances/1/submit
+Authorization: {{user_token}}
+
+### 提交草稿 - 草稿不存在
+POST http://localhost:8080/api/user/instances/999/submit
+Authorization: {{user_token}}
+
+### 提交草稿 - 重复提交（尝试再次提交已处于审批中的 ID=2）
+POST http://localhost:8080/api/user/instances/2/submit
+Authorization: {{user_token}}
+
+### 登录获取 Token（admin - 用于测试越权）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 提交草稿 - 越权提交（使用 admin 尝试提交 zhangsan 的草稿 ID=1）
+POST http://localhost:8080/api/user/instances/1/submit
+Authorization: {{admin_token}}
+
+### 提交草稿 - 未登录（应返回 401）
+POST http://localhost:8080/api/user/instances/1/submit
 

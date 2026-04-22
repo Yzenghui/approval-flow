@@ -279,6 +279,56 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     }
 
+    /**
+     * 修改重提
+     *
+     * @param id       申请ID
+     * @param formData 表单数据
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resubmitApplication(Long id, String formData) {
+        ProcessInstance existingInstance = processInstanceMapper.selectById(id);
+        if (existingInstance == null) {
+            throw new BusinessException(400, "申请不存在");
+        }
+
+        if (existingInstance.getStatus() != 3 && existingInstance.getStatus() != 4) {
+            throw new BusinessException(400, "只有驳回或撤回的申请可修改重提");
+        }
+
+        if (!existingInstance.getInitiatorId().equals(StpUtil.getLoginIdAsLong())) {
+            throw new BusinessException(400, "无权修改此申请");
+        }
+
+        ProcessDefinition existingProcess = processDefinitionMapper.selectOne(new LambdaQueryWrapper<ProcessDefinition>()
+                .eq(ProcessDefinition::getId, existingInstance.getDefinitionId())
+                .eq(ProcessDefinition::getStatus, 1)
+        );
+        if (existingProcess == null) {
+            throw new BusinessException(400, "流程不存在或已禁用");
+        }
+
+        processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
+                .eq(ProcessInstance::getId, id)
+                .set(ProcessInstance::getFormData, formData)
+                .set(ProcessInstance::getSubmitCount, existingInstance.getSubmitCount() + 1)
+                .set(ProcessInstance::getStatus, 1)
+        );
+
+        ProcessInstance updatedInstance = processInstanceMapper.selectById(id);
+        startApprovalProcess(updatedInstance, existingProcess);
+
+        ApprovalRecord record = new ApprovalRecord();
+        record.setInstanceId(existingInstance.getId());
+        record.setOperatorId(existingInstance.getInitiatorId());
+        record.setTaskId(null);
+        record.setAction(4);
+        record.setRemark(null);
+        approvalRecordMapper.insert(record);
+
+    }
+
 
     /**
      * 启动审批流程：查找第一个满足条件的节点并生成任务

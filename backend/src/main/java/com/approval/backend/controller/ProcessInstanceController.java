@@ -5,6 +5,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
 import com.approval.backend.dto.request.CreateDraftRequest;
+import com.approval.backend.dto.request.ResubmitRequest;
 import com.approval.backend.dto.request.SubmitApplicationRequest;
 import com.approval.backend.dto.request.UpdateDraftRequest;
 import com.approval.backend.dto.response.AvailableProcessResponse;
@@ -114,4 +115,16 @@ public class ProcessInstanceController {
         return Result.success(null);
     }
 
+    /**
+     * 修改重提
+     *
+     * @param instanceId      申请ID
+     * @param resubmitRequest 修改重提请求数据传输对象
+     */
+    @PostMapping("/instances/{instanceId}/resubmit")
+    @SaCheckLogin
+    public Result<?> resubmitApplication(@PathVariable Long instanceId, @RequestBody @Valid ResubmitRequest resubmitRequest) {
+        processInstanceService.resubmitApplication(instanceId, resubmitRequest.getFormData());
+        return Result.success(null);
+    }
 }

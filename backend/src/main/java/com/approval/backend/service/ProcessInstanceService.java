@@ -58,4 +58,12 @@ public interface ProcessInstanceService {
      * @param id 申请ID
      */
     void withdrawApplication(Long id);
+
+    /**
+     * 修改重提
+     *
+     * @param id       申请ID
+     * @param formData 表单数据
+     */
+    void resubmitApplication(Long id, String formData);
 }

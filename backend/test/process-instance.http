@@ -299,3 +299,74 @@ Authorization: {{admin_token}}
 
 ### 撤回申请 - 未登录（应返回 401）
 POST http://localhost:8080/api/user/instances/2/withdraw
+
+### ========================================
+### 修改重提功能测试
+### ========================================
+
+### 登录获取 Token（zhangsan - 员工角色）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 修改重提 - 正常重提（ID=2，修改原因并提交）
+POST http://localhost:8080/api/user/instances/2/resubmit
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "formData": "{\"reason\": \"修改后的年假申请\", \"days\": 3}"
+}
+
+### 修改重提 - 申请不存在
+POST http://localhost:8080/api/user/instances/999/resubmit
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "formData": "{}"
+}
+
+### 修改重提 - 状态不符（尝试重提一个审批中的申请 ID=1）
+POST http://localhost:8080/api/user/instances/1/resubmit
+Content-Type: application/json
+Authorization: {{user_token}}
+
+{
+  "formData": "{}"
+}
+
+### 修改重提 - 越权重提（使用 admin 尝试重提 zhangsan 的申请）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 修改重提 - 越权重提（使用 admin 尝试重提 zhangsan 的申请）
+POST http://localhost:8080/api/user/instances/2/resubmit
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "formData": "{}"
+}
+
+### 修改重提 - 未登录（应返回 401）
+POST http://localhost:8080/api/user/instances/2/resubmit
+Content-Type: application/json
+
+{
+  "formData": "{}"
+}
+

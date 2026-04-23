@@ -357,21 +357,6 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         Page<ProcessInstance> page = new Page<>(pageNum, pageSize);
         Page<ProcessInstance> processInstancePage = processInstanceMapper.selectPage(page, queryWrapper);
 
-        List<Long> pendingInstanceIds = processInstancePage.getRecords().stream()
-                .filter(processInstance -> processInstance.getStatus() == 1)
-                .map(ProcessInstance::getId)
-                .toList();
-
-        Map<Long, String> currentNodeNameMap = new HashMap<>();
-        if (!pendingInstanceIds.isEmpty()) {
-            List<Task> tasks = taskMapper.selectList(new LambdaQueryWrapper<Task>()
-                    .in(Task::getInstanceId, pendingInstanceIds)
-                    .eq(Task::getStatus, 0));
-            for (Task task : tasks) {
-                currentNodeNameMap.put(task.getInstanceId(), task.getNodeName());
-            }
-        }
-
         PageResult<MyInstanceResponse> pageResult = new PageResult<>();
         pageResult.setTotal(processInstancePage.getTotal());
         pageResult.setRecords(processInstancePage.getRecords().stream()
@@ -380,7 +365,6 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                     myInstanceResponse.setId(processInstance.getId());
                     myInstanceResponse.setDefinitionName(processInstance.getDefinitionName());
                     myInstanceResponse.setFormData(processInstance.getFormData());
-                    myInstanceResponse.setCurrentNodeName(currentNodeNameMap.get(processInstance.getId()));
                     myInstanceResponse.setSubmitCount(processInstance.getSubmitCount());
                     myInstanceResponse.setStatus(processInstance.getStatus());
                     myInstanceResponse.setCreateTime(processInstance.getCreateTime());

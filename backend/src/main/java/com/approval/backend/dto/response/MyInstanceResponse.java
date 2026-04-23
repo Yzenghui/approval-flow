@@ -12,7 +12,6 @@ public class MyInstanceResponse {
     private Long id;
     private String definitionName;
     private String formData;
-    private String currentNodeName;
     private Integer submitCount;
     private Integer status;
     private LocalDateTime createTime;

@@ -385,20 +385,20 @@ Content-Type: application/json
 
 > {% client.global.set("user_token", response.body.data.token); %}
 
-### 获取我的申请列表 - 查询全部
-GET http://localhost:8080/api/user/instances?pageNum=1&pageSize=10
+### 获取我的申请列表 - 默认分页（返回所有状态）
+GET http://localhost:8080/api/user/instances
 Authorization: {{user_token}}
 
-### 获取我的申请列表 - 筛选审批中(status=1)
-GET http://localhost:8080/api/user/instances?status=1&pageNum=1&pageSize=10
+### 获取我的申请列表 - 只看审批中的申请 (status=1)
+GET http://localhost:8080/api/user/instances?status=1
 Authorization: {{user_token}}
 
-### 获取我的申请列表 - 筛选已撤回(status=4)
-GET http://localhost:8080/api/user/instances?status=4&pageNum=1&pageSize=10
+### 获取我的申请列表 - 只看草稿 (status=0)
+GET http://localhost:8080/api/user/instances?status=0
 Authorization: {{user_token}}
 
-### 获取我的申请列表 - 无匹配数据
-GET http://localhost:8080/api/user/instances?status=3&pageNum=1&pageSize=10
+### 获取我的申请列表 - 指定页码和数量
+GET http://localhost:8080/api/user/instances?pageNum=1&pageSize=5
 Authorization: {{user_token}}
 
 ### 获取我的申请列表 - 未登录（应返回 401）

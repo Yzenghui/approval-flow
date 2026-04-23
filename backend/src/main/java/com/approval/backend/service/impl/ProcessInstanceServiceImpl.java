@@ -1,12 +1,12 @@
 package com.approval.backend.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.CreateDraftRequest;
 import com.approval.backend.dto.request.SubmitApplicationRequest;
 import com.approval.backend.dto.response.AvailableProcessResponse;
 import com.approval.backend.dto.response.CreateDraftResponse;
+import com.approval.backend.dto.response.MyInstanceResponse;
 import com.approval.backend.dto.response.SubmitApplicationResponse;
 import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -95,11 +96,12 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
      * 新建并提交申请
      *
      * @param submitApplicationRequest 新建并提交申请请求数据传输对象
+     * @param userId                   用户ID
      * @return 新建并提交申请响应数据传输对象
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public SubmitApplicationResponse submitApplication(SubmitApplicationRequest submitApplicationRequest) {
+    public SubmitApplicationResponse submitApplication(SubmitApplicationRequest submitApplicationRequest, Long userId) {
         ProcessDefinition existingProcess = processDefinitionMapper.selectOne(new LambdaQueryWrapper<ProcessDefinition>()
                 .eq(ProcessDefinition::getId, submitApplicationRequest.getDefinitionId())
                 .eq(ProcessDefinition::getStatus, 1)
@@ -111,7 +113,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         ProcessInstance processInstance = new ProcessInstance();
         processInstance.setDefinitionId(existingProcess.getId());
         processInstance.setDefinitionName(existingProcess.getName());
-        processInstance.setInitiatorId(StpUtil.getLoginIdAsLong());
+        processInstance.setInitiatorId(userId);
         processInstance.setFormData(submitApplicationRequest.getFormData());
         processInstance.setSubmitCount(1);
         processInstance.setStatus(1);
@@ -137,10 +139,11 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
      * 新建草稿
      *
      * @param createDraftRequest 新建草稿请求数据传输对象
+     * @param userId             用户ID
      * @return 新建草稿响应数据传输对象
      */
     @Override
-    public CreateDraftResponse createDraft(CreateDraftRequest createDraftRequest) {
+    public CreateDraftResponse createDraft(CreateDraftRequest createDraftRequest, Long userId) {
         ProcessDefinition existingProcess = processDefinitionMapper.selectOne(new LambdaQueryWrapper<ProcessDefinition>()
                 .eq(ProcessDefinition::getId, createDraftRequest.getDefinitionId())
                 .eq(ProcessDefinition::getStatus, 1)
@@ -152,7 +155,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         ProcessInstance processInstance = new ProcessInstance();
         processInstance.setDefinitionId(existingProcess.getId());
         processInstance.setDefinitionName(existingProcess.getName());
-        processInstance.setInitiatorId(StpUtil.getLoginIdAsLong());
+        processInstance.setInitiatorId(userId);
         processInstance.setFormData(createDraftRequest.getFormData());
         processInstance.setSubmitCount(1);
         processInstance.setStatus(0);
@@ -169,9 +172,10 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
      *
      * @param id       草稿ID
      * @param formData 表单数据
+     * @param userId   用户ID
      */
     @Override
-    public void updateDraft(Long id, String formData) {
+    public void updateDraft(Long id, String formData, Long userId) {
         ProcessInstance existingDraft = processInstanceMapper.selectById(id);
         if (existingDraft == null) {
             throw new BusinessException(400, "草稿不存在");
@@ -181,7 +185,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             throw new BusinessException(400, "只有草稿状态可修改");
         }
 
-        if (!existingDraft.getInitiatorId().equals(StpUtil.getLoginIdAsLong())) {
+        if (!existingDraft.getInitiatorId().equals(userId)) {
             throw new BusinessException(400, "无权修改此草稿");
         }
 
@@ -194,11 +198,12 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     /**
      * 提交草稿
      *
-     * @param id 草稿ID
+     * @param id     草稿ID
+     * @param userId 用户ID
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void submitDraft(Long id) {
+    public void submitDraft(Long id, Long userId) {
         ProcessInstance existingDraft = processInstanceMapper.selectById(id);
         if (existingDraft == null) {
             throw new BusinessException(400, "申请不存在");
@@ -208,7 +213,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             throw new BusinessException(400, "只有草稿状态可提交");
         }
 
-        if (!existingDraft.getInitiatorId().equals(StpUtil.getLoginIdAsLong())) {
+        if (!existingDraft.getInitiatorId().equals(userId)) {
             throw new BusinessException(400, "无权提交此申请");
         }
 
@@ -240,11 +245,12 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     /**
      * 撤回申请
      *
-     * @param id 申请ID
+     * @param id     申请ID
+     * @param userId 用户ID
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void withdrawApplication(Long id) {
+    public void withdrawApplication(Long id, Long userId) {
         ProcessInstance existingDraft = processInstanceMapper.selectById(id);
         if (existingDraft == null) {
             throw new BusinessException(400, "申请不存在");
@@ -254,7 +260,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             throw new BusinessException(400, "只有审批中的申请可撤回");
         }
 
-        if (!existingDraft.getInitiatorId().equals(StpUtil.getLoginIdAsLong())) {
+        if (!existingDraft.getInitiatorId().equals(userId)) {
             throw new BusinessException(400, "无权撤回此申请");
         }
 
@@ -284,10 +290,11 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
      *
      * @param id       申请ID
      * @param formData 表单数据
+     * @param userId   用户ID
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void resubmitApplication(Long id, String formData) {
+    public void resubmitApplication(Long id, String formData, Long userId) {
         ProcessInstance existingInstance = processInstanceMapper.selectById(id);
         if (existingInstance == null) {
             throw new BusinessException(400, "申请不存在");
@@ -297,7 +304,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             throw new BusinessException(400, "只有驳回或撤回的申请可修改重提");
         }
 
-        if (!existingInstance.getInitiatorId().equals(StpUtil.getLoginIdAsLong())) {
+        if (!existingInstance.getInitiatorId().equals(userId)) {
             throw new BusinessException(400, "无权修改此申请");
         }
 
@@ -329,6 +336,63 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     }
 
+    /**
+     * 获取我的申请列表
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页数量
+     * @param status   申请状态
+     * @param userId   用户ID
+     * @return 我的申请列表
+     */
+    @Override
+    public PageResult<MyInstanceResponse> getMyInstances(Integer pageNum, Integer pageSize, Integer status, Long userId) {
+        LambdaQueryWrapper<ProcessInstance> queryWrapper = new LambdaQueryWrapper<ProcessInstance>()
+                .eq(ProcessInstance::getInitiatorId, userId)
+                .orderByDesc(ProcessInstance::getCreateTime);
+        if (status != null) {
+            queryWrapper.eq(ProcessInstance::getStatus, status);
+        }
+
+        Page<ProcessInstance> page = new Page<>(pageNum, pageSize);
+        Page<ProcessInstance> processInstancePage = processInstanceMapper.selectPage(page, queryWrapper);
+
+        List<Long> pendingInstanceIds = processInstancePage.getRecords().stream()
+                .filter(processInstance -> processInstance.getStatus() == 1)
+                .map(ProcessInstance::getId)
+                .toList();
+
+        Map<Long, String> currentNodeNameMap = new HashMap<>();
+        if (!pendingInstanceIds.isEmpty()) {
+            List<Task> tasks = taskMapper.selectList(new LambdaQueryWrapper<Task>()
+                    .in(Task::getInstanceId, pendingInstanceIds)
+                    .eq(Task::getStatus, 0));
+            for (Task task : tasks) {
+                currentNodeNameMap.put(task.getInstanceId(), task.getNodeName());
+            }
+        }
+
+        PageResult<MyInstanceResponse> pageResult = new PageResult<>();
+        pageResult.setTotal(processInstancePage.getTotal());
+        pageResult.setRecords(processInstancePage.getRecords().stream()
+                .map(processInstance -> {
+                    MyInstanceResponse myInstanceResponse = new MyInstanceResponse();
+                    myInstanceResponse.setId(processInstance.getId());
+                    myInstanceResponse.setDefinitionName(processInstance.getDefinitionName());
+                    myInstanceResponse.setFormData(processInstance.getFormData());
+                    myInstanceResponse.setCurrentNodeName(currentNodeNameMap.get(processInstance.getId()));
+                    myInstanceResponse.setSubmitCount(processInstance.getSubmitCount());
+                    myInstanceResponse.setStatus(processInstance.getStatus());
+                    myInstanceResponse.setCreateTime(processInstance.getCreateTime());
+                    myInstanceResponse.setUpdateTime(processInstance.getUpdateTime());
+
+                    return myInstanceResponse;
+                })
+                .toList()
+        );
+
+        return pageResult;
+    }
 
     /**
      * 启动审批流程：查找第一个满足条件的节点并生成任务

@@ -370,3 +370,37 @@ Content-Type: application/json
   "formData": "{}"
 }
 
+### ========================================
+### 我的申请列表功能测试
+### ========================================
+
+### 登录获取 Token（zhangsan - 员工角色）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 获取我的申请列表 - 查询全部
+GET http://localhost:8080/api/user/instances?pageNum=1&pageSize=10
+Authorization: {{user_token}}
+
+### 获取我的申请列表 - 筛选审批中(status=1)
+GET http://localhost:8080/api/user/instances?status=1&pageNum=1&pageSize=10
+Authorization: {{user_token}}
+
+### 获取我的申请列表 - 筛选已撤回(status=4)
+GET http://localhost:8080/api/user/instances?status=4&pageNum=1&pageSize=10
+Authorization: {{user_token}}
+
+### 获取我的申请列表 - 无匹配数据
+GET http://localhost:8080/api/user/instances?status=3&pageNum=1&pageSize=10
+Authorization: {{user_token}}
+
+### 获取我的申请列表 - 未登录（应返回 401）
+GET http://localhost:8080/api/user/instances
+

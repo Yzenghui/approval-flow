@@ -10,6 +10,7 @@ import com.approval.backend.dto.request.SubmitApplicationRequest;
 import com.approval.backend.dto.request.UpdateDraftRequest;
 import com.approval.backend.dto.response.AvailableProcessResponse;
 import com.approval.backend.dto.response.CreateDraftResponse;
+import com.approval.backend.dto.response.MyInstanceResponse;
 import com.approval.backend.dto.response.SubmitApplicationResponse;
 import com.approval.backend.service.ProcessInstanceService;
 import jakarta.validation.Valid;
@@ -61,7 +62,7 @@ public class ProcessInstanceController {
     @PostMapping("/instances")
     @SaCheckLogin
     public Result<?> submitApplication(@RequestBody @Valid SubmitApplicationRequest submitApplicationRequest) {
-        SubmitApplicationResponse submitApplicationResponse = processInstanceService.submitApplication(submitApplicationRequest);
+        SubmitApplicationResponse submitApplicationResponse = processInstanceService.submitApplication(submitApplicationRequest, StpUtil.getLoginIdAsLong());
         return Result.success(submitApplicationResponse);
     }
 
@@ -74,7 +75,7 @@ public class ProcessInstanceController {
     @PostMapping("/drafts")
     @SaCheckLogin
     public Result<?> createDraft(@RequestBody @Valid CreateDraftRequest createDraftRequest) {
-        CreateDraftResponse createDraftResponse = processInstanceService.createDraft(createDraftRequest);
+        CreateDraftResponse createDraftResponse = processInstanceService.createDraft(createDraftRequest, StpUtil.getLoginIdAsLong());
         return Result.success(createDraftResponse);
     }
 
@@ -87,7 +88,7 @@ public class ProcessInstanceController {
     @PutMapping("/drafts/{instanceId}")
     @SaCheckLogin
     public Result<?> updateDraft(@PathVariable Long instanceId, @RequestBody @Valid UpdateDraftRequest updateDraftRequest) {
-        processInstanceService.updateDraft(instanceId, updateDraftRequest.getFormData());
+        processInstanceService.updateDraft(instanceId, updateDraftRequest.getFormData(), StpUtil.getLoginIdAsLong());
         return Result.success(null);
     }
 
@@ -99,7 +100,7 @@ public class ProcessInstanceController {
     @PostMapping("/instances/{instanceId}/submit")
     @SaCheckLogin
     public Result<?> submitDraft(@PathVariable Long instanceId) {
-        processInstanceService.submitDraft(instanceId);
+        processInstanceService.submitDraft(instanceId, StpUtil.getLoginIdAsLong());
         return Result.success(null);
     }
 
@@ -111,7 +112,7 @@ public class ProcessInstanceController {
     @PostMapping("/instances/{instanceId}/withdraw")
     @SaCheckLogin
     public Result<?> withdrawApplication(@PathVariable Long instanceId) {
-        processInstanceService.withdrawApplication(instanceId);
+        processInstanceService.withdrawApplication(instanceId, StpUtil.getLoginIdAsLong());
         return Result.success(null);
     }
 
@@ -124,7 +125,36 @@ public class ProcessInstanceController {
     @PostMapping("/instances/{instanceId}/resubmit")
     @SaCheckLogin
     public Result<?> resubmitApplication(@PathVariable Long instanceId, @RequestBody @Valid ResubmitRequest resubmitRequest) {
-        processInstanceService.resubmitApplication(instanceId, resubmitRequest.getFormData());
+        processInstanceService.resubmitApplication(instanceId, resubmitRequest.getFormData(), StpUtil.getLoginIdAsLong());
         return Result.success(null);
+    }
+
+    /**
+     * 获取我的申请列表
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页数量
+     * @param status   申请状态
+     * @return 我的申请列表
+     */
+    @GetMapping("/instances")
+    @SaCheckLogin
+    public Result<?> getMyInstances(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) Integer status
+    ) {
+        if (pageNum == null || pageNum < 1) {
+            pageNum = 1;
+        }
+        if (pageSize == null || pageSize < 1) {
+            pageSize = 10;
+        }
+        if (pageSize > 100) {
+            pageSize = 100;
+        }
+
+        PageResult<MyInstanceResponse> result = processInstanceService.getMyInstances(pageNum, pageSize, status, StpUtil.getLoginIdAsLong());
+        return Result.success(result);
     }
 }

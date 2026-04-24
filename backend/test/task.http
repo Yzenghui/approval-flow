@@ -1,0 +1,40 @@
+### ========================================
+### 待办任务列表功能测试
+### ========================================
+
+### 登录获取 Token（wangwu - 主管，有待办任务）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "wangwu",
+  "password": "123456"
+}
+
+> {% client.global.set("approver_token", response.body.data.token); %}
+
+### 获取待办任务列表 - 正常查询
+GET http://localhost:8080/api/user/tasks/pending
+Authorization: {{approver_token}}
+
+### 获取待办任务列表 - 指定分页
+GET http://localhost:8080/api/user/tasks/pending?pageNum=1&pageSize=1
+Authorization: {{approver_token}}
+
+### 获取待办任务列表 - 未登录（应返回 401）
+GET http://localhost:8080/api/user/tasks/pending
+
+### 登录获取 Token（zhangsan - 员工，通常没有待办）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("staff_token", response.body.data.token); %}
+
+### 获取待办任务列表 - 无待办情况（zhangsan 应该看到空列表）
+GET http://localhost:8080/api/user/tasks/pending
+Authorization: {{staff_token}}

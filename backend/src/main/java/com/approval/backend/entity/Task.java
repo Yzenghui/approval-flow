@@ -18,7 +18,7 @@ public class Task {
     private Long nodeId;
     private String nodeName;
     private Long assigneeId;
-    private Integer submitCount;
+    private Integer submitRound;
     private Integer status;
 
     @TableField(fill = FieldFill.INSERT)

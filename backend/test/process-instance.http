@@ -404,3 +404,43 @@ Authorization: {{user_token}}
 ### 获取我的申请列表 - 未登录（应返回 401）
 GET http://localhost:8080/api/user/instances
 
+### ========================================
+### 获取流程详情功能测试
+### ========================================
+
+### 登录获取 Token（zhangsan - 员工角色）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 获取流程详情 - 正常查询（查看 ID=1 的申请详情及审批轨迹）
+GET http://localhost:8080/api/user/instances/1
+Authorization: {{user_token}}
+
+### 获取流程详情 - 申请不存在
+GET http://localhost:8080/api/user/instances/999
+Authorization: {{user_token}}
+
+### 获取流程详情 - 越权查看（使用 admin 尝试查看 zhangsan 的申请 ID=1）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 获取流程详情 - 越权查看（使用 admin 尝试查看 zhangsan 的申请 ID=1）
+GET http://localhost:8080/api/user/instances/1
+Authorization: {{admin_token}}
+
+### 获取流程详情 - 未登录（应返回 401）
+GET http://localhost:8080/api/user/instances/1

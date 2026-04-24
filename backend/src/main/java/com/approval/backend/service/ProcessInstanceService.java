@@ -3,10 +3,7 @@ package com.approval.backend.service;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.CreateDraftRequest;
 import com.approval.backend.dto.request.SubmitApplicationRequest;
-import com.approval.backend.dto.response.AvailableProcessResponse;
-import com.approval.backend.dto.response.CreateDraftResponse;
-import com.approval.backend.dto.response.MyInstanceResponse;
-import com.approval.backend.dto.response.SubmitApplicationResponse;
+import com.approval.backend.dto.response.*;
 
 /**
  * 流程实例服务接口
@@ -84,4 +81,13 @@ public interface ProcessInstanceService {
      * @return 我的申请列表
      */
     PageResult<MyInstanceResponse> getMyInstances(Integer pageNum, Integer pageSize, Integer status, Long id);
+
+    /**
+     * 获取流程实例详情
+     *
+     * @param instanceId 流程实例ID
+     * @param userId     用户ID
+     * @return 流程实例详情
+     */
+    ProcessInstanceDetailResponse getInstanceDetail(Long instanceId, Long userId);
 }

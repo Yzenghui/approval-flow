@@ -4,10 +4,7 @@ import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.CreateDraftRequest;
 import com.approval.backend.dto.request.SubmitApplicationRequest;
-import com.approval.backend.dto.response.AvailableProcessResponse;
-import com.approval.backend.dto.response.CreateDraftResponse;
-import com.approval.backend.dto.response.MyInstanceResponse;
-import com.approval.backend.dto.response.SubmitApplicationResponse;
+import com.approval.backend.dto.response.*;
 import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
 import com.approval.backend.service.ProcessInstanceService;
@@ -25,6 +22,7 @@ import org.springframework.util.StringUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 流程实例服务具体实现类
@@ -379,6 +377,86 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     }
 
     /**
+     * 获取流程实例详情
+     *
+     * @param instanceId 流程实例ID
+     * @param userId     用户ID
+     * @return 流程实例详情
+     */
+    @Override
+    public ProcessInstanceDetailResponse getInstanceDetail(Long instanceId, Long userId) {
+        ProcessInstance processInstance = processInstanceMapper.selectById(instanceId);
+        if (processInstance == null) {
+            throw new BusinessException(400, "申请不存在");
+        }
+
+        if (!processInstance.getInitiatorId().equals(userId)) {
+            throw new BusinessException(400, "无权查看此申请");
+        }
+
+        ProcessInstanceDetailResponse processInstanceDetailResponse = new ProcessInstanceDetailResponse();
+        processInstanceDetailResponse.setId(processInstance.getId());
+        processInstanceDetailResponse.setDefinitionName(processInstance.getDefinitionName());
+        processInstanceDetailResponse.setFormData(processInstance.getFormData());
+        processInstanceDetailResponse.setSubmitCount(processInstance.getSubmitCount());
+        processInstanceDetailResponse.setStatus(processInstance.getStatus());
+        processInstanceDetailResponse.setCreateTime(processInstance.getCreateTime());
+        processInstanceDetailResponse.setUpdateTime(processInstance.getUpdateTime());
+
+        List<ApprovalRecord> approvalRecords = approvalRecordMapper.selectList(new LambdaQueryWrapper<ApprovalRecord>()
+                .eq(ApprovalRecord::getInstanceId, instanceId)
+                .orderByAsc(ApprovalRecord::getCreateTime)
+        );
+
+        List<Long> operatorIds = approvalRecords.stream()
+                .map(ApprovalRecord::getOperatorId)
+                .distinct()
+                .toList();
+        Map<Long, String> operatorNameMap = new HashMap<>();
+        if (!operatorIds.isEmpty()) {
+            List<User> users = userMapper.selectBatchIds(operatorIds);
+            users.forEach(user -> operatorNameMap.put(user.getId(), user.getName()));
+        }
+
+        List<Long> taskIds = approvalRecords.stream()
+                .map(ApprovalRecord::getTaskId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, Task> taskMap = new HashMap<>();
+        if (!taskIds.isEmpty()) {
+            List<Task> tasks = taskMapper.selectBatchIds(taskIds);
+            tasks.forEach(task -> taskMap.put(task.getId(), task));
+        }
+
+        processInstanceDetailResponse.setRecords(approvalRecords.stream()
+                .map(approvalRecord -> {
+                    ApprovalTrajectoryResponse approvalTrajectoryResponse = new ApprovalTrajectoryResponse();
+                    approvalTrajectoryResponse.setOperatorName(operatorNameMap.get(approvalRecord.getOperatorId()));
+                    approvalTrajectoryResponse.setAction(approvalRecord.getAction());
+
+                    Task task = taskMap.get(approvalRecord.getTaskId());
+                    if (task != null) {
+                        approvalTrajectoryResponse.setSubmitRound(task.getSubmitRound());
+                        approvalTrajectoryResponse.setNodeName(task.getNodeName());
+                    } else {
+                        approvalTrajectoryResponse.setSubmitRound(processInstance.getSubmitCount());
+                        approvalTrajectoryResponse.setNodeName(null);
+                    }
+
+                    approvalTrajectoryResponse.setRemark(approvalRecord.getRemark());
+                    approvalTrajectoryResponse.setCreateTime(approvalRecord.getCreateTime());
+
+                    return approvalTrajectoryResponse;
+                })
+                .toList()
+        );
+
+        return processInstanceDetailResponse;
+
+    }
+
+    /**
      * 启动审批流程：查找第一个满足条件的节点并生成任务
      *
      * @param processInstance   流程实例
@@ -442,7 +520,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             task.setNodeId(processNode.getId());
             task.setNodeName(processNode.getNodeName());
             task.setAssigneeId(currentUser.getId());
-            task.setSubmitCount(processInstance.getSubmitCount());
+            task.setSubmitRound(processInstance.getSubmitCount());
             task.setStatus(0);
             taskMapper.insert(task);
 

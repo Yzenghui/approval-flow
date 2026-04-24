@@ -8,10 +8,7 @@ import com.approval.backend.dto.request.CreateDraftRequest;
 import com.approval.backend.dto.request.ResubmitRequest;
 import com.approval.backend.dto.request.SubmitApplicationRequest;
 import com.approval.backend.dto.request.UpdateDraftRequest;
-import com.approval.backend.dto.response.AvailableProcessResponse;
-import com.approval.backend.dto.response.CreateDraftResponse;
-import com.approval.backend.dto.response.MyInstanceResponse;
-import com.approval.backend.dto.response.SubmitApplicationResponse;
+import com.approval.backend.dto.response.*;
 import com.approval.backend.service.ProcessInstanceService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -157,4 +154,18 @@ public class ProcessInstanceController {
         PageResult<MyInstanceResponse> result = processInstanceService.getMyInstances(pageNum, pageSize, status, StpUtil.getLoginIdAsLong());
         return Result.success(result);
     }
+
+    /**
+     * 获取流程实例详情
+     *
+     * @param instanceId 流程实例ID
+     * @return 流程实例详情
+     */
+    @GetMapping("/instances/{instanceId}")
+    @SaCheckLogin
+    public Result<?> getInstanceDetail(@PathVariable Long instanceId) {
+        ProcessInstanceDetailResponse result = processInstanceService.getInstanceDetail(instanceId, StpUtil.getLoginIdAsLong());
+        return Result.success(result);
+    }
+
 }

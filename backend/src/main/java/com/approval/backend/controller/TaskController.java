@@ -4,8 +4,10 @@ import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
+import com.approval.backend.dto.request.ApproveRequest;
 import com.approval.backend.dto.response.PendingTaskResponse;
 import com.approval.backend.service.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -48,4 +50,16 @@ public class TaskController {
         return Result.success(result);
     }
 
+    /**
+     * 通过任务
+     *
+     * @param taskId         任务ID
+     * @param approveRequest 审批信息
+     */
+    @PostMapping("/tasks/{taskId}/approve")
+    @SaCheckLogin
+    public Result<?> approveTask(@PathVariable Long taskId, @RequestBody @Valid ApproveRequest approveRequest) {
+        taskService.approveTask(taskId, approveRequest.getRemark(), StpUtil.getLoginIdAsLong());
+        return Result.success(null);
+    }
 }

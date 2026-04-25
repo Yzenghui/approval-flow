@@ -16,4 +16,13 @@ public interface TaskService {
      * @return 待办任务
      */
     PageResult<PendingTaskResponse> getPendingTasks(Integer pageNum, Integer pageSize, Long userId);
+
+    /**
+     * 通过任务
+     *
+     * @param taskId 任务ID
+     * @param remark 审批意见
+     * @param userId 用户ID
+     */
+    void approveTask(Long taskId, String remark, Long userId);
 }

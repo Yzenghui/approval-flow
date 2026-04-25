@@ -507,6 +507,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 currentUser = userMapper.selectOne(new LambdaQueryWrapper<User>()
                         .eq(User::getRoleId, roleId)
                         .eq(User::getStatus, 1)
+                        .ne(User::getId, processInstance.getInitiatorId())
                         .orderByAsc(User::getId)
                         .last("LIMIT 1"));
             }

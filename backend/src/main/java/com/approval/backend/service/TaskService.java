@@ -2,6 +2,7 @@ package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.request.RejectRequest;
+import com.approval.backend.dto.response.CompletedTaskResponse;
 import com.approval.backend.dto.response.PendingTaskResponse;
 
 /**
@@ -35,4 +36,14 @@ public interface TaskService {
      * @param userId 用户ID
      */
     void rejectTask(Long taskId, String remark, Long userId);
+
+    /**
+     * 获取已办任务
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页数量
+     * @param userId   用户ID
+     * @return 已办任务
+     */
+    PageResult<CompletedTaskResponse> getCompletedTasks(Integer pageNum, Integer pageSize, Long userId);
 }

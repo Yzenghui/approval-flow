@@ -161,3 +161,29 @@ Content-Type: application/json
 {
   "remark": "未登录测试"
 }
+
+### ========================================
+### 已办任务列表功能测试
+### ========================================
+
+### 登录获取 Token（wangwu - 主管，处理过任务）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "wangwu",
+  "password": "123456"
+}
+
+> {% client.global.set("approver_token", response.body.data.token); %}
+
+### 获取已办任务列表 - 正常查询（wangwu 应该能看到之前通过或驳回的记录）
+GET http://localhost:8080/api/user/tasks/completed
+Authorization: {{approver_token}}
+
+### 获取已办任务列表 - 指定分页
+GET http://localhost:8080/api/user/tasks/completed?pageNum=1&pageSize=5
+Authorization: {{approver_token}}
+
+### 获取已办任务列表 - 未登录（应返回 401）
+GET http://localhost:8080/api/user/tasks/completed

@@ -2,7 +2,7 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
-import com.approval.backend.dto.request.RejectRequest;
+import com.approval.backend.dto.response.CompletedTaskResponse;
 import com.approval.backend.dto.response.PendingTaskResponse;
 import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
@@ -60,12 +60,12 @@ public class TaskServiceImpl implements TaskService {
                 .orderByDesc(Task::getCreateTime);
         Page<Task> taskPage = taskMapper.selectPage(page, queryWrapper);
 
-        List<Long> taskIds = taskPage.getRecords().stream()
+        List<Long> instanceIds = taskPage.getRecords().stream()
                 .map(Task::getInstanceId)
                 .toList();
         Map<Long, ProcessInstance> processInstanceMap = new HashMap<>();
-        if (!taskIds.isEmpty()) {
-            List<ProcessInstance> processInstances = processInstanceMapper.selectBatchIds(taskIds);
+        if (!instanceIds.isEmpty()) {
+            List<ProcessInstance> processInstances = processInstanceMapper.selectBatchIds(instanceIds);
             processInstances.forEach(processInstance -> processInstanceMap.put(processInstance.getId(), processInstance));
         }
 
@@ -185,6 +185,81 @@ public class TaskServiceImpl implements TaskService {
         approvalRecord.setRemark(remark);
         approvalRecordMapper.insert(approvalRecord);
 
+    }
+
+    /**
+     * 获取已办任务
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页数量
+     * @param userId   用户ID
+     * @return 已办任务
+     */
+    @Override
+    public PageResult<CompletedTaskResponse> getCompletedTasks(Integer pageNum, Integer pageSize, Long userId) {
+        Page<Task> page = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
+                .eq(Task::getAssigneeId, userId)
+                .eq(Task::getStatus, 1)
+                .orderByDesc(Task::getUpdateTime);
+        Page<Task> taskPage = taskMapper.selectPage(page, queryWrapper);
+
+        List<Long> instanceIds = taskPage.getRecords().stream()
+                .map(Task::getInstanceId)
+                .toList();
+        Map<Long, ProcessInstance> processInstanceMap = new HashMap<>();
+        if (!instanceIds.isEmpty()) {
+            List<ProcessInstance> processInstances = processInstanceMapper.selectBatchIds(instanceIds);
+            processInstances.forEach(processInstance -> processInstanceMap.put(processInstance.getId(), processInstance));
+        }
+
+        List<Long> initiatorIds = processInstanceMap.values().stream()
+                .map(ProcessInstance::getInitiatorId)
+                .distinct()
+                .toList();
+        Map<Long, String> initiatorNameMap = new HashMap<>();
+        if (!initiatorIds.isEmpty()) {
+            List<User> initiators = userMapper.selectBatchIds(initiatorIds);
+            initiators.forEach(initiator -> initiatorNameMap.put(initiator.getId(), initiator.getName()));
+        }
+
+        List<Long> taskIds = taskPage.getRecords().stream()
+                .map(Task::getId)
+                .toList();
+        Map<Long, ApprovalRecord> approvalRecordMap = new HashMap<>();
+        if (!taskIds.isEmpty()) {
+            List<ApprovalRecord> approvalRecords = approvalRecordMapper.selectList(new LambdaQueryWrapper<ApprovalRecord>()
+                    .in(ApprovalRecord::getTaskId, taskIds)
+            );
+            approvalRecords.forEach(approvalRecord -> approvalRecordMap.put(approvalRecord.getTaskId(), approvalRecord));
+        }
+
+        PageResult<CompletedTaskResponse> pageResult = new PageResult<>();
+        pageResult.setTotal(taskPage.getTotal());
+        pageResult.setRecords(taskPage.getRecords().stream()
+                .map(task -> {
+                    CompletedTaskResponse completedTaskResponse = new CompletedTaskResponse();
+                    completedTaskResponse.setTaskId(task.getId());
+                    completedTaskResponse.setInstanceId(task.getInstanceId());
+
+                    ProcessInstance instance = processInstanceMap.get(task.getInstanceId());
+                    completedTaskResponse.setDefinitionName(instance.getDefinitionName());
+                    completedTaskResponse.setInitiatorName(initiatorNameMap.get(instance.getInitiatorId()));
+                    completedTaskResponse.setFormData(instance.getFormData());
+
+                    completedTaskResponse.setAction(approvalRecordMap.get(task.getId()).getAction());
+                    completedTaskResponse.setRemark(approvalRecordMap.get(task.getId()).getRemark());
+
+                    completedTaskResponse.setNodeName(task.getNodeName());
+                    completedTaskResponse.setCreateTime(task.getCreateTime());
+                    completedTaskResponse.setCompleteTime(task.getUpdateTime());
+
+                    return completedTaskResponse;
+                })
+                .toList()
+        );
+
+        return pageResult;
     }
 
     /**

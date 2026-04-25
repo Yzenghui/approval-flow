@@ -6,6 +6,7 @@ import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
 import com.approval.backend.dto.request.ApproveRequest;
 import com.approval.backend.dto.request.RejectRequest;
+import com.approval.backend.dto.response.CompletedTaskResponse;
 import com.approval.backend.dto.response.PendingTaskResponse;
 import com.approval.backend.service.TaskService;
 import jakarta.validation.Valid;
@@ -64,7 +65,6 @@ public class TaskController {
         return Result.success(null);
     }
 
-
     /**
      * 驳回任务
      *
@@ -77,4 +77,33 @@ public class TaskController {
         taskService.rejectTask(taskId, rejectRequest.getRemark(), StpUtil.getLoginIdAsLong());
         return Result.success(null);
     }
+
+    /**
+     * 获取已办任务
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页数量
+     * @return 已办任务
+     */
+    @GetMapping("/tasks/completed")
+    @SaCheckLogin
+    public Result<?> getCompletedTasks(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize
+    ) {
+        if (pageNum == null || pageNum < 1) {
+            pageNum = 1;
+        }
+        if (pageSize == null || pageSize < 1) {
+            pageSize = 10;
+        }
+        if (pageSize > 100) {
+            pageSize = 100;
+        }
+
+        PageResult<CompletedTaskResponse> result = taskService.getCompletedTasks(pageNum, pageSize, StpUtil.getLoginIdAsLong());
+
+        return Result.success(result);
+    }
+
 }

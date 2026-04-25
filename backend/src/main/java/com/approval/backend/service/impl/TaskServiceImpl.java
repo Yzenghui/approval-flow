@@ -248,7 +248,6 @@ public class TaskServiceImpl implements TaskService {
                     completedTaskResponse.setFormData(instance.getFormData());
 
                     completedTaskResponse.setAction(approvalRecordMap.get(task.getId()).getAction());
-                    completedTaskResponse.setRemark(approvalRecordMap.get(task.getId()).getRemark());
 
                     completedTaskResponse.setNodeName(task.getNodeName());
                     completedTaskResponse.setCreateTime(task.getCreateTime());

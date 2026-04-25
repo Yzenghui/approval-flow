@@ -16,7 +16,6 @@ public class CompletedTaskResponse {
     private String initiatorName;
     private String formData;
     private Integer action;
-    private String remark;
     private LocalDateTime createTime;
     private LocalDateTime completeTime;
 }

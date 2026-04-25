@@ -390,8 +390,12 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             throw new BusinessException(400, "申请不存在");
         }
 
-        if (!processInstance.getInitiatorId().equals(userId)) {
-            throw new BusinessException(400, "无权查看此申请");
+        boolean isInitiator = processInstance.getInitiatorId().equals(userId);
+        boolean isAssignee = taskMapper.exists(new LambdaQueryWrapper<Task>()
+                .eq(Task::getInstanceId, instanceId)
+                .eq(Task::getAssigneeId, userId));
+        if (!isInitiator && !isAssignee) {
+            throw new BusinessException(403, "无权查看此申请");
         }
 
         ProcessInstanceDetailResponse processInstanceDetailResponse = new ProcessInstanceDetailResponse();

@@ -5,6 +5,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
 import com.approval.backend.dto.request.ApproveRequest;
+import com.approval.backend.dto.request.RejectRequest;
 import com.approval.backend.dto.response.PendingTaskResponse;
 import com.approval.backend.service.TaskService;
 import jakarta.validation.Valid;
@@ -60,6 +61,20 @@ public class TaskController {
     @SaCheckLogin
     public Result<?> approveTask(@PathVariable Long taskId, @RequestBody @Valid ApproveRequest approveRequest) {
         taskService.approveTask(taskId, approveRequest.getRemark(), StpUtil.getLoginIdAsLong());
+        return Result.success(null);
+    }
+
+
+    /**
+     * 驳回任务
+     *
+     * @param taskId        任务ID
+     * @param rejectRequest 驳回信息
+     */
+    @PostMapping("/tasks/{taskId}/reject")
+    @SaCheckLogin
+    public Result<?> rejectTask(@PathVariable Long taskId, @RequestBody @Valid RejectRequest rejectRequest) {
+        taskService.rejectTask(taskId, rejectRequest.getRemark(), StpUtil.getLoginIdAsLong());
         return Result.success(null);
     }
 }

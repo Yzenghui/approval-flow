@@ -2,6 +2,7 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.dto.request.RejectRequest;
 import com.approval.backend.dto.response.PendingTaskResponse;
 import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
@@ -115,7 +116,7 @@ public class TaskServiceImpl implements TaskService {
     public void approveTask(Long taskId, String remark, Long userId) {
         LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
                 .eq(Task::getId, taskId)
-                .eq(Task::getStatus, 0L);
+                .eq(Task::getStatus, 0);
         Task task = taskMapper.selectOne(queryWrapper);
         if (task == null) {
             throw new BusinessException("任务不存在或已处理");
@@ -127,7 +128,7 @@ public class TaskServiceImpl implements TaskService {
 
         taskMapper.update(null, new LambdaUpdateWrapper<Task>()
                 .eq(Task::getId, taskId)
-                .set(Task::getStatus, 1L));
+                .set(Task::getStatus, 1));
 
         boolean hasNext = createNextTask(task);
         if (!hasNext) {
@@ -141,6 +142,46 @@ public class TaskServiceImpl implements TaskService {
         approvalRecord.setOperatorId(userId);
         approvalRecord.setTaskId(task.getId());
         approvalRecord.setAction(1);
+        approvalRecord.setRemark(remark);
+        approvalRecordMapper.insert(approvalRecord);
+
+    }
+
+    /**
+     * 驳回任务
+     *
+     * @param taskId 任务ID
+     * @param remark 审批意见
+     * @param userId 用户ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void rejectTask(Long taskId, String remark, Long userId) {
+        LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
+                .eq(Task::getId, taskId)
+                .eq(Task::getStatus, 0);
+        Task task = taskMapper.selectOne(queryWrapper);
+        if (task == null) {
+            throw new BusinessException("任务不存在或已处理");
+        }
+
+        if (!task.getAssigneeId().equals(userId)) {
+            throw new BusinessException("无权处理此任务");
+        }
+
+        taskMapper.update(null, new LambdaUpdateWrapper<Task>()
+                .eq(Task::getId, taskId)
+                .set(Task::getStatus, 1));
+
+        processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
+                .eq(ProcessInstance::getId, task.getInstanceId())
+                .set(ProcessInstance::getStatus, 3));
+
+        ApprovalRecord approvalRecord = new ApprovalRecord();
+        approvalRecord.setInstanceId(task.getInstanceId());
+        approvalRecord.setOperatorId(userId);
+        approvalRecord.setTaskId(task.getId());
+        approvalRecord.setAction(2);
         approvalRecord.setRemark(remark);
         approvalRecordMapper.insert(approvalRecord);
 

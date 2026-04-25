@@ -1,6 +1,7 @@
 package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
+import com.approval.backend.dto.request.RejectRequest;
 import com.approval.backend.dto.response.PendingTaskResponse;
 
 /**
@@ -25,4 +26,13 @@ public interface TaskService {
      * @param userId 用户ID
      */
     void approveTask(Long taskId, String remark, Long userId);
+
+    /**
+     * 驳回任务
+     *
+     * @param taskId 任务ID
+     * @param remark 审批意见
+     * @param userId 用户ID
+     */
+    void rejectTask(Long taskId, String remark, Long userId);
 }

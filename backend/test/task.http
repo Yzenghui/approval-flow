@@ -100,3 +100,64 @@ Content-Type: application/json
 {
   "remark": "未登录测试"
 }
+
+### ========================================
+### 驳回任务功能测试
+### ========================================
+
+### 登录获取 Token（wangwu - 主管，有待办任务 ID=3）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "wangwu",
+  "password": "123456"
+}
+
+> {% client.global.set("approver_token", response.body.data.token); %}
+
+### 驳回任务 - 正常驳回（处理 ID=3 的任务，流程应变为已驳回）
+POST http://localhost:8080/api/user/tasks/3/reject
+Content-Type: application/json
+Authorization: {{approver_token}}
+
+{
+  "remark": "不符合规定，驳回重填"
+}
+
+### 驳回任务 - 任务不存在或已处理（再次提交 ID=3 应报错）
+POST http://localhost:8080/api/user/tasks/3/reject
+Content-Type: application/json
+Authorization: {{approver_token}}
+
+{
+  "remark": "重复提交测试"
+}
+
+### 驳回任务 - 越权驳回（使用 zhangsan 尝试驳回 wangwu 的任务）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("staff_token", response.body.data.token); %}
+
+### 驳回任务 - 越权测试
+POST http://localhost:8080/api/user/tasks/3/reject
+Content-Type: application/json
+Authorization: {{staff_token}}
+
+{
+  "remark": "越权测试"
+}
+
+### 驳回任务 - 未登录（应返回 401）
+POST http://localhost:8080/api/user/tasks/3/reject
+Content-Type: application/json
+
+{
+  "remark": "未登录测试"
+}

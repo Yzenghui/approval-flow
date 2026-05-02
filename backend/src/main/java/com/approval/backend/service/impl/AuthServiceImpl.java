@@ -43,7 +43,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         if (user == null || !BCrypt.checkpw(loginRequest.getPassword(), user.getPassword())) {
-            throw new BusinessException(401, "用户名或密码错误");
+            throw new BusinessException(400, "用户名或密码错误");
         }
 
         if (user.getStatus() != null && user.getStatus() != 1) {

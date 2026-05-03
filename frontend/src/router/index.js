@@ -7,7 +7,11 @@ const router = createRouter({
       path: '/login',
       name: 'UserLogin',
       component: () => import('@/views/UserLogin.vue'),
-      meta: { requiresAuth: false },
+    },
+    {
+      path: '/register',
+      name: 'UserRegister',
+      component: () => import('@/views/UserRegister.vue'),
     },
     {
       path: '/',

@@ -2,6 +2,7 @@ package com.approval.backend.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.common.Result;
 import com.approval.backend.dto.request.CreateUserRequest;
@@ -84,7 +85,7 @@ public class AdminUserController {
     @SaCheckLogin
     @SaCheckRole("ADMIN")
     public Result<?> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest updateUserRequest) {
-        userService.updateUser(id, updateUserRequest);
+        userService.updateUser(id, updateUserRequest, StpUtil.getLoginIdAsLong());
         return Result.success(null);
     }
 

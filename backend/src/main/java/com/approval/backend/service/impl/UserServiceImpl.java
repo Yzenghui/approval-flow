@@ -171,24 +171,33 @@ public class UserServiceImpl implements UserService {
      *
      * @param id                用户ID
      * @param updateUserRequest 更新用户请求数据传输对象
+     * @param currentUserId     当前登录用户ID
      */
     @Override
-    public void updateUser(Long id, UpdateUserRequest updateUserRequest) {
+    public void updateUser(Long id, UpdateUserRequest updateUserRequest, Long currentUserId) {
         User user = userMapper.selectById(id);
         if (user == null) {
             throw new BusinessException(400, "用户不存在");
         }
 
-        User existingEmail = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getEmail, updateUserRequest.getEmail()).ne(User::getId, id));
+        User existingEmail = userMapper.selectOne(new LambdaQueryWrapper<User>()
+                .eq(User::getEmail, updateUserRequest.getEmail())
+                .ne(User::getId, id));
         if (existingEmail != null) {
             throw new BusinessException(400, "邮箱已存在");
         }
 
-        Role role = roleMapper.selectOne(new LambdaQueryWrapper<Role>().eq(Role::getCode, updateUserRequest.getRoleCode()));
+        Role role = roleMapper.selectOne(new LambdaQueryWrapper<Role>()
+                .eq(Role::getCode, updateUserRequest.getRoleCode()));
         if (role == null) {
             throw new BusinessException(400, "角色编码无效");
         }
-        Long roleId = role.getId();
+        Long newRoleId = role.getId();
+        Long oldRoleId = user.getRoleId();
+
+        if (id.equals(currentUserId) && !oldRoleId.equals(newRoleId)) {
+            throw new BusinessException(400, "不能修改自己的角色");
+        }
 
         Integer oldStatus = user.getStatus();
 
@@ -196,7 +205,7 @@ public class UserServiceImpl implements UserService {
                 .eq(User::getId, id)
                 .set(User::getName, updateUserRequest.getName())
                 .set(User::getEmail, updateUserRequest.getEmail())
-                .set(User::getRoleId, roleId)
+                .set(User::getRoleId, newRoleId)
                 .set(User::getStatus, updateUserRequest.getStatus())
         );
 

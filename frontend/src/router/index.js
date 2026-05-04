@@ -19,7 +19,6 @@ const router = createRouter({
       children: [
         { path: 'instances', component: () => import('@/views/MyInstances.vue') },
         { path: 'apply', component: () => import('@/views/ApplyForm.vue') },
-        { path: 'apply-edit/:id', component: () => import('@/views/ApplyEdit.vue') },
         { path: 'pending', component: () => import('@/views/PendingTasks.vue') },
         { path: 'completed', component: () => import('@/views/CompletedTasks.vue') },
         { path: 'profile', component: () => import('@/views/UserProfile.vue') },
@@ -27,6 +26,8 @@ const router = createRouter({
         { path: 'definitions', component: () => import('@/views/admin/DefinitionList.vue') },
         { path: 'users', component: () => import('@/views/admin/UserList.vue') },
         { path: 'instance/:id', component: () => import('@/views/InstanceDetail.vue') },
+        { path: 'draft-edit/:id', component: () => import('@/views/DraftEdit.vue') },
+        { path: 'resubmit-edit/:id', component: () => import('@/views/ResubmitEdit.vue') },
       ],
     },
   ],

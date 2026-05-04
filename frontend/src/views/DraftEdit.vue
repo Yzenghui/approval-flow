@@ -1,9 +1,9 @@
 <template>
-  <div class="apply-edit">
+  <div class="draft-edit">
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>修改申请</span>
+          <span>编辑草稿</span>
           <el-button @click="goBack">返回</el-button>
         </div>
       </template>
@@ -19,7 +19,8 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="handleSubmit" :loading="submitting"> 提交 </el-button>
+          <el-button type="primary" @click="handleSave" :loading="submitting">保存草稿</el-button>
+          <el-button @click="handleSubmit" :loading="submitting">提交</el-button>
           <el-button @click="goBack">取消</el-button>
         </el-form-item>
       </el-form>
@@ -42,7 +43,6 @@ const submitting = ref(false)
 const formRef = ref()
 const formData = ref({})
 
-// 加载原有申请数据
 const loadInstanceData = async () => {
   loading.value = true
   try {
@@ -51,7 +51,6 @@ const loadInstanceData = async () => {
       const data = res.data
       if (data.formData) {
         let parsed = typeof data.formData === 'string' ? JSON.parse(data.formData) : data.formData
-        // 将数字字符串转为数字
         for (const key in parsed) {
           if (typeof parsed[key] === 'string' && /^\d+(\.\d+)?$/.test(parsed[key])) {
             parsed[key] = parseFloat(parsed[key])
@@ -62,39 +61,54 @@ const loadInstanceData = async () => {
     }
   } catch (error) {
     console.error('加载失败', error)
-    ElMessage.error('加载申请数据失败')
+    ElMessage.error('加载草稿数据失败')
     goBack()
   } finally {
     loading.value = false
   }
 }
 
-// 提交修改重提
+const prepareFormData = (data) => {
+  const result = { ...data }
+  for (const key in result) {
+    if (typeof result[key] === 'string' && /^\d+(\.\d+)?$/.test(result[key])) {
+      result[key] = parseFloat(result[key])
+    }
+  }
+  return result
+}
+
+// 保存草稿
+const handleSave = async () => {
+  try {
+    submitting.value = true
+    const res = await request.put(`/user/drafts/${instanceId}`, {
+      formData: JSON.stringify(prepareFormData(formData.value)),
+    })
+    if (res.code === 200) {
+      ElMessage.success('草稿保存成功')
+      router.push('/instances')
+    }
+  } catch (error) {
+    console.error('保存失败', error)
+  } finally {
+    submitting.value = false
+  }
+}
+
+// 提交草稿
 const handleSubmit = async () => {
   try {
-    await ElMessageBox.confirm('确定提交修改后的申请吗？', '提示', {
+    await ElMessageBox.confirm('确定提交此申请吗？提交后将进入审批流程。', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
     })
 
-    // 将用户输入的数字字符串转为数字
-    const prepareFormData = (data) => {
-      const result = { ...data }
-      for (const key in result) {
-        if (typeof result[key] === 'string' && /^\d+(\.\d+)?$/.test(result[key])) {
-          result[key] = parseFloat(result[key])
-        }
-      }
-      return result
-    }
-
     submitting.value = true
-    const res = await request.post(`/user/instances/${instanceId}/resubmit`, {
-      formData: JSON.stringify(prepareFormData(formData.value)),
-    })
+    const res = await request.post(`/user/instances/${instanceId}/submit`)
     if (res.code === 200) {
-      ElMessage.success('修改重提成功')
+      ElMessage.success('提交成功')
       router.push('/instances')
     }
   } catch (error) {
@@ -116,7 +130,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.apply-edit {
+.draft-edit {
   height: 100%;
 }
 .card-header {

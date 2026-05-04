@@ -170,7 +170,7 @@ const loadDetail = async () => {
 
 // 编辑草稿
 const handleEditDraft = () => {
-  router.push(`/apply-edit/${instanceId}?mode=draft`)
+  router.push(`/draft-edit/${instanceId}`)
 }
 
 // 提交草稿
@@ -196,7 +196,7 @@ const handleSubmitDraft = async () => {
 
 // 修改重提
 const handleModifyResubmit = () => {
-  router.push(`/apply-edit/${instanceId}?mode=resubmit`)
+  router.push(`/resubmit-edit/${instanceId}`)
 }
 
 // 撤回申请

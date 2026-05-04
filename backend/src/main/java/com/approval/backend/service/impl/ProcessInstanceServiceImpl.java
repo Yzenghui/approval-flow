@@ -444,7 +444,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                         approvalTrajectoryResponse.setSubmitRound(task.getSubmitRound());
                         approvalTrajectoryResponse.setNodeName(task.getNodeName());
                     } else {
-                        approvalTrajectoryResponse.setSubmitRound(processInstance.getSubmitCount());
+                        approvalTrajectoryResponse.setSubmitRound(null);
                         approvalTrajectoryResponse.setNodeName(null);
                     }
 

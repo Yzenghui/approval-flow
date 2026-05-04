@@ -49,12 +49,9 @@
             {{ formatDateTime(row.updateTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="80" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="viewDetail(row.id)">详情</el-button>
-            <el-button v-if="row.status === 0" link type="success" @click="submitDraft(row.id)">
-              提交
-            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -76,7 +73,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
 
 const router = useRouter()
@@ -86,9 +82,8 @@ const tableData = ref([])
 const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(10)
-const filterStatus = ref(null) // 状态筛选，null 表示全部
+const filterStatus = ref(null)
 
-// 状态映射
 const statusMap = {
   0: { text: '草稿', type: 'info' },
   1: { text: '审批中', type: 'warning' },
@@ -100,7 +95,6 @@ const statusMap = {
 const getStatusText = (status) => statusMap[status]?.text || '未知'
 const getStatusType = (status) => statusMap[status]?.type || 'info'
 
-// 格式化 formData 预览
 const formatFormData = (formData) => {
   if (!formData) return '—'
   try {
@@ -113,20 +107,15 @@ const formatFormData = (formData) => {
   }
 }
 
-// 格式化日期时间
 const formatDateTime = (isoString) => {
   if (!isoString) return '—'
   return isoString.replace('T', ' ').substring(0, 19)
 }
 
-// 加载数据
 const loadData = async () => {
   loading.value = true
   try {
-    const params = {
-      pageNum: pageNum.value,
-      pageSize: pageSize.value,
-    }
+    const params = { pageNum: pageNum.value, pageSize: pageSize.value }
     if (filterStatus.value !== null && filterStatus.value !== '') {
       params.status = filterStatus.value
     }
@@ -142,37 +131,18 @@ const loadData = async () => {
   }
 }
 
-// 状态筛选变化时重置页码并重新加载
 const handleStatusChange = () => {
   pageNum.value = 1
   loadData()
 }
 
-// 刷新
 const refreshList = () => {
   pageNum.value = 1
   loadData()
 }
 
-// 查看详情
 const viewDetail = (id) => {
   router.push(`/instance/${id}`)
-}
-
-// 提交草稿
-const submitDraft = async (id) => {
-  try {
-    await ElMessageBox.confirm('确定提交此申请吗？', '提示')
-    const res = await request.post(`/user/instances/${id}/submit`)
-    if (res.code === 200) {
-      ElMessage.success('提交成功')
-      loadData()
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('提交失败', error)
-    }
-  }
 }
 
 onMounted(() => {

@@ -26,7 +26,7 @@
         }}</el-descriptions-item>
       </el-descriptions>
 
-      <!-- 申请内容：键值对列表 -->
+      <!-- 申请内容：键值对列表（只读） -->
       <el-descriptions title="申请内容" :column="2" border class="form-data-section">
         <el-descriptions-item v-for="(value, key) in parsedFormData" :key="key" :label="key">
           {{ value }}
@@ -72,9 +72,13 @@
 
       <!-- 底部操作栏 -->
       <div class="action-bar">
-        <el-button v-if="detail.status === 0" type="primary" @click="handleSubmitDraft">
-          提交
-        </el-button>
+        <!-- 草稿状态：显示编辑 + 提交 -->
+        <template v-if="detail.status === 0">
+          <el-button type="primary" @click="handleEditDraft">编辑</el-button>
+          <el-button type="success" @click="handleSubmitDraft">提交</el-button>
+        </template>
+
+        <!-- 驳回/撤回：显示修改重提 -->
         <el-button
           v-if="detail.status === 3 || detail.status === 4"
           type="primary"
@@ -82,6 +86,8 @@
         >
           修改重提
         </el-button>
+
+        <!-- 审批中且是发起人：显示撤回 -->
         <el-button v-if="detail.status === 1 && isInitiator" type="danger" @click="handleWithdraw">
           撤回
         </el-button>
@@ -162,6 +168,12 @@ const loadDetail = async () => {
   }
 }
 
+// 编辑草稿
+const handleEditDraft = () => {
+  router.push(`/apply-edit/${instanceId}?mode=draft`)
+}
+
+// 提交草稿
 const handleSubmitDraft = async () => {
   try {
     await ElMessageBox.confirm('确定提交此申请吗？提交后将进入审批流程。', '提示', {
@@ -182,10 +194,12 @@ const handleSubmitDraft = async () => {
   }
 }
 
+// 修改重提
 const handleModifyResubmit = () => {
-  router.push(`/apply-edit/${instanceId}`)
+  router.push(`/apply-edit/${instanceId}?mode=resubmit`)
 }
 
+// 撤回申请
 const handleWithdraw = async () => {
   try {
     await ElMessageBox.confirm('确定撤回此申请吗？撤回后流程终止，可修改后重提。', '提示', {

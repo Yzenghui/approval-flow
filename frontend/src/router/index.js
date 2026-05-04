@@ -19,6 +19,7 @@ const router = createRouter({
       children: [
         { path: 'instances', component: () => import('@/views/MyInstances.vue') },
         { path: 'apply', component: () => import('@/views/ApplyForm.vue') },
+        { path: 'apply-edit/:id', component: () => import('@/views/ApplyEdit.vue') },
         { path: 'pending', component: () => import('@/views/PendingTasks.vue') },
         { path: 'completed', component: () => import('@/views/CompletedTasks.vue') },
         { path: 'profile', component: () => import('@/views/UserProfile.vue') },

@@ -119,14 +119,15 @@ Content-Type: application/json
 
 > {% client.global.set("admin_token", response.body.data.token); %}
 
-### 新增流程 - 采购申请流程（多级审批）
+### 新增流程 - 员工采购流程（包含动态表单结构）
 POST http://localhost:8080/api/admin/definitions
 Content-Type: application/json
 Authorization: {{admin_token}}
 
 {
-  "name": "员工采购申请流程",
+  "name": "员工采购流程",
   "roleCode": "STAFF",
+  "formSchema": "[{\"field\": \"itemName\", \"label\": \"物品名称\", \"type\": \"text\", \"required\": true}, {\"field\": \"quantity\", \"label\": \"采购数量\", \"type\": \"number\", \"required\": true}]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -153,6 +154,7 @@ Authorization: {{admin_token}}
 {
   "name": "员工报销流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -172,6 +174,7 @@ Authorization: {{admin_token}}
 {
   "name": "测试重复顺序流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "节点 A",
@@ -198,6 +201,7 @@ Authorization: {{admin_token}}
 {
   "name": "测试无效策略流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -217,6 +221,7 @@ Authorization: {{admin_token}}
 {
   "name": "测试 RELATIVE 格式错误流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -236,6 +241,7 @@ Authorization: {{admin_token}}
 {
   "name": "测试 USER 格式错误流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -255,6 +261,7 @@ Authorization: {{admin_token}}
 {
   "name": "测试 ROLE 编码不存在流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -274,7 +281,7 @@ Authorization: {{admin_token}}
 {
   "name": "测试空节点流程",
   "roleCode": "STAFF",
-  "nodes": []
+  "formSchema": "[]"
 }
 
 ### 新增流程 - 流程名称为空
@@ -285,6 +292,7 @@ Authorization: {{admin_token}}
 {
   "name": "",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -304,6 +312,26 @@ Authorization: {{admin_token}}
 {
   "name": "测试 roleCode 为空流程",
   "roleCode": "",
+  "formSchema": "[]",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 新增流程 - formSchema 为空（应返回校验错误）
+POST http://localhost:8080/api/admin/definitions
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "测试表单为空流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -322,6 +350,7 @@ Content-Type: application/json
 {
   "name": "测试未登录流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -352,6 +381,7 @@ Authorization: {{user_token}}
 {
   "name": "测试权限流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -378,7 +408,7 @@ Content-Type: application/json
 
 > {% client.global.set("admin_token", response.body.data.token); %}
 
-### 编辑流程 - 正常修改名称和节点阈值（采购申请流程 ID=3）
+### 编辑流程 - 正常修改名称和表单结构（员工采购流程 ID=3）
 PATCH http://localhost:8080/api/admin/definitions/3
 Content-Type: application/json
 Authorization: {{admin_token}}
@@ -386,6 +416,7 @@ Authorization: {{admin_token}}
 {
   "name": "员工采购流程",
   "roleCode": "STAFF",
+  "formSchema": "[{\"field\": \"itemName\", \"label\": \"物品名称\", \"type\": \"text\", \"required\": true}, {\"field\": \"price\", \"label\": \"单价\", \"type\": \"number\", \"required\": false}]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -412,6 +443,7 @@ Authorization: {{admin_token}}
 {
   "name": "不存在的流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -431,6 +463,7 @@ Authorization: {{admin_token}}
 {
   "name": "员工请假流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -450,6 +483,7 @@ Authorization: {{admin_token}}
 {
   "name": "员工采购流程",
   "roleCode": "INVALID_ROLE",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -469,6 +503,7 @@ Authorization: {{admin_token}}
 {
   "name": "员工采购流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -488,6 +523,7 @@ Authorization: {{admin_token}}
 {
   "name": "员工采购流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -507,6 +543,7 @@ Authorization: {{admin_token}}
 {
   "name": "员工采购流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -526,6 +563,7 @@ Authorization: {{admin_token}}
 {
   "name": "员工采购流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -545,6 +583,7 @@ Authorization: {{admin_token}}
 {
   "name": "员工采购流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "节点 A",
@@ -571,7 +610,7 @@ Authorization: {{admin_token}}
 {
   "name": "员工采购流程",
   "roleCode": "STAFF",
-  "nodes": []
+  "formSchema": "[]"
 }
 
 ### 编辑流程 - 流程名称为空
@@ -582,6 +621,7 @@ Authorization: {{admin_token}}
 {
   "name": "",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -601,6 +641,26 @@ Authorization: {{admin_token}}
 {
   "name": "员工采购流程",
   "roleCode": "",
+  "formSchema": "[]",
+  "nodes": [
+    {
+      "nodeName": "主管审批",
+      "nodeOrder": 1,
+      "assigneeType": "RELATIVE",
+      "assigneeExpr": "manager_id",
+      "conditionExpr": ""
+    }
+  ]
+}
+
+### 编辑流程 - formSchema 为空（应返回校验错误）
+PATCH http://localhost:8080/api/admin/definitions/3
+Content-Type: application/json
+Authorization: {{admin_token}}
+
+{
+  "name": "员工采购流程",
+  "roleCode": "STAFF",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -619,6 +679,7 @@ Content-Type: application/json
 {
   "name": "员工采购流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",
@@ -649,6 +710,7 @@ Authorization: {{user_token}}
 {
   "name": "员工采购流程",
   "roleCode": "STAFF",
+  "formSchema": "[]",
   "nodes": [
     {
       "nodeName": "主管审批",

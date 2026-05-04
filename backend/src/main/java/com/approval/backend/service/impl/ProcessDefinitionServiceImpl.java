@@ -144,6 +144,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinition.setVersion(1);
         processDefinition.setRoleCode(createProcessRequest.getRoleCode());
         processDefinition.setStatus(1);
+        processDefinition.setFormSchema(createProcessRequest.getFormSchema());
         processDefinitionMapper.insert(processDefinition);
 
         List<ProcessNode> processNodes = createProcessRequest.getNodes().stream()
@@ -224,6 +225,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 .set(ProcessDefinition::getName, createProcessRequest.getName())
                 .set(ProcessDefinition::getRoleCode, createProcessRequest.getRoleCode())
                 .set(ProcessDefinition::getVersion, existingDefinition.getVersion() + 1)
+                .set(ProcessDefinition::getFormSchema, createProcessRequest.getFormSchema())
         );
 
         processNodeMapper.delete(new LambdaQueryWrapper<ProcessNode>()

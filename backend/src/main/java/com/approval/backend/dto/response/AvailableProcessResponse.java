@@ -10,4 +10,5 @@ public class AvailableProcessResponse {
     private Long id;
     private String name;
     private String roleCode;
+    private String formSchema;
 }

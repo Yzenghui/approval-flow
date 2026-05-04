@@ -18,6 +18,7 @@ public class ProcessDefinition {
     private Integer version;
     private String roleCode;
     private Integer status;
+    private String formSchema;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

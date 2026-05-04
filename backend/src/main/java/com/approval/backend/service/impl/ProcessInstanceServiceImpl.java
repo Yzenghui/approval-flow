@@ -83,6 +83,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                     availableProcessResponse.setId(processDefinition.getId());
                     availableProcessResponse.setName(processDefinition.getName());
                     availableProcessResponse.setRoleCode(processDefinition.getRoleCode());
+                    availableProcessResponse.setFormSchema(processDefinition.getFormSchema());
                     return availableProcessResponse;
                 })
                 .toList());

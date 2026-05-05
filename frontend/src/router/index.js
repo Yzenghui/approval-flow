@@ -28,6 +28,7 @@ const router = createRouter({
         { path: 'instance/:id', component: () => import('@/views/InstanceDetail.vue') },
         { path: 'draft-edit/:id', component: () => import('@/views/DraftEdit.vue') },
         { path: 'resubmit-edit/:id', component: () => import('@/views/ResubmitEdit.vue') },
+        { path: 'task/:taskId', component: () => import('@/views/TaskDetail.vue') },
       ],
     },
   ],

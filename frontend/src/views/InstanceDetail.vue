@@ -87,8 +87,8 @@
           修改重提
         </el-button>
 
-        <!-- 审批中且是发起人：显示撤回 -->
-        <el-button v-if="detail.status === 1 && isInitiator" type="danger" @click="handleWithdraw">
+        <!-- 审批中：显示撤回 -->
+        <el-button v-if="detail.status === 1" type="danger" @click="handleWithdraw">
           撤回
         </el-button>
       </div>
@@ -101,20 +101,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
-import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const route = useRoute()
-const userStore = useUserStore()
 const instanceId = route.params.id
 
 const loading = ref(false)
 const detail = ref({})
 const records = ref([])
-
-const isInitiator = computed(() => {
-  return userStore.userInfo?.id === detail.value.initiatorId
-})
 
 const statusMap = {
   0: { text: '草稿', type: 'info' },
@@ -213,7 +207,9 @@ const handleWithdraw = async () => {
       loadDetail()
     }
   } catch (error) {
-    if (error !== 'cancel') console.error('撤回失败', error)
+    if (error !== 'cancel') {
+      console.error('撤回失败', error)
+    }
   }
 }
 

@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Data
 public class MyInstanceResponse {
     private Long id;
+    private Long definitionId;
     private String definitionName;
     private String formData;
     private Integer submitCount;

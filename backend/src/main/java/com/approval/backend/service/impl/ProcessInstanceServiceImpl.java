@@ -362,6 +362,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .map(processInstance -> {
                     MyInstanceResponse myInstanceResponse = new MyInstanceResponse();
                     myInstanceResponse.setId(processInstance.getId());
+                    myInstanceResponse.setDefinitionId(processInstance.getDefinitionId());
                     myInstanceResponse.setDefinitionName(processInstance.getDefinitionName());
                     myInstanceResponse.setFormData(processInstance.getFormData());
                     myInstanceResponse.setSubmitCount(processInstance.getSubmitCount());
@@ -401,6 +402,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
         ProcessInstanceDetailResponse processInstanceDetailResponse = new ProcessInstanceDetailResponse();
         processInstanceDetailResponse.setId(processInstance.getId());
+        processInstanceDetailResponse.setDefinitionId(processInstance.getDefinitionId());
         processInstanceDetailResponse.setDefinitionName(processInstance.getDefinitionName());
         processInstanceDetailResponse.setFormData(processInstance.getFormData());
         processInstanceDetailResponse.setSubmitCount(processInstance.getSubmitCount());

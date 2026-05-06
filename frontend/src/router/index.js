@@ -29,6 +29,18 @@ const router = createRouter({
         { path: 'draft-edit/:id', component: () => import('@/views/DraftEdit.vue') },
         { path: 'resubmit-edit/:id', component: () => import('@/views/ResubmitEdit.vue') },
         { path: 'task/:taskId', component: () => import('@/views/TaskDetail.vue') },
+        {
+          path: 'admin/definition/create',
+          component: () => import('@/views/admin/DefinitionForm.vue'),
+        },
+        {
+          path: 'admin/definition/:id',
+          component: () => import('@/views/admin/DefinitionDetail.vue'),
+        },
+        {
+          path: 'admin/definition/:id/edit',
+          component: () => import('@/views/admin/DefinitionForm.vue'),
+        },
       ],
     },
   ],

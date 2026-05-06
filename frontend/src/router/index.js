@@ -31,15 +31,11 @@ const router = createRouter({
         { path: 'task/:taskId', component: () => import('@/views/TaskDetail.vue') },
         {
           path: 'admin/definition/create',
-          component: () => import('@/views/admin/DefinitionForm.vue'),
+          component: () => import('@/views/admin/DefinitionDetail.vue'),
         },
         {
           path: 'admin/definition/:id',
           component: () => import('@/views/admin/DefinitionDetail.vue'),
-        },
-        {
-          path: 'admin/definition/:id/edit',
-          component: () => import('@/views/admin/DefinitionForm.vue'),
         },
       ],
     },

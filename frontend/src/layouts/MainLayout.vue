@@ -14,7 +14,6 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="profile">个人信息</el-dropdown-item>
-              <el-dropdown-item command="password">修改密码</el-dropdown-item>
               <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -88,8 +87,6 @@ const handleCommand = async (command) => {
     router.push('/login')
   } else if (command === 'profile') {
     router.push('/profile')
-  } else if (command === 'password') {
-    router.push('/change-password')
   }
 }
 </script>

@@ -22,10 +22,8 @@ const router = createRouter({
         { path: 'apply', component: () => import('@/views/ApplyForm.vue') },
         { path: 'pending', component: () => import('@/views/PendingTasks.vue') },
         { path: 'completed', component: () => import('@/views/CompletedTasks.vue') },
-        { path: 'profile', component: () => import('@/views/UserProfile.vue') },
-        { path: 'change-password', component: () => import('@/views/ChangePassword.vue') },
 
-        // 通用详情页
+        // 申请相关页面（详情/草稿编辑/修改重提/审批）
         { path: 'instance/:id', component: () => import('@/views/InstanceDetail.vue') },
         { path: 'draft-edit/:id', component: () => import('@/views/DraftEdit.vue') },
         { path: 'resubmit-edit/:id', component: () => import('@/views/ResubmitEdit.vue') },
@@ -34,8 +32,6 @@ const router = createRouter({
         // 管理员页面
         { path: 'definitions', component: () => import('@/views/admin/DefinitionList.vue') },
         { path: 'users', component: () => import('@/views/admin/UserList.vue') },
-
-        // 流程定义（新增 + 详情/编辑，共用同一个组件）
         {
           path: 'admin/definition/create',
           component: () => import('@/views/admin/DefinitionDetail.vue'),
@@ -44,6 +40,9 @@ const router = createRouter({
           path: 'admin/definition/:id',
           component: () => import('@/views/admin/DefinitionDetail.vue'),
         },
+
+        // 个人中心
+        { path: 'profile', component: () => import('@/views/UserProfile.vue') },
       ],
     },
   ],

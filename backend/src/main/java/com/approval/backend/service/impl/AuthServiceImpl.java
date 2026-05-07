@@ -66,6 +66,7 @@ public class AuthServiceImpl implements AuthService {
         userInfo.setRoleCode(role.getCode());
         userInfo.setRoleName(role.getName());
 
+        userInfo.setManagerId(user.getManagerId());
         userInfo.setStatus(user.getStatus());
         userInfo.setCreateTime(user.getCreateTime());
         userInfo.setUpdateTime(user.getUpdateTime());

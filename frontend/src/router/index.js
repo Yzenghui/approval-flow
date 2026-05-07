@@ -17,18 +17,25 @@ const router = createRouter({
       path: '/',
       component: () => import('@/layouts/MainLayout.vue'),
       children: [
+        // 普通用户页面
         { path: 'instances', component: () => import('@/views/MyInstances.vue') },
         { path: 'apply', component: () => import('@/views/ApplyForm.vue') },
         { path: 'pending', component: () => import('@/views/PendingTasks.vue') },
         { path: 'completed', component: () => import('@/views/CompletedTasks.vue') },
         { path: 'profile', component: () => import('@/views/UserProfile.vue') },
         { path: 'change-password', component: () => import('@/views/ChangePassword.vue') },
-        { path: 'definitions', component: () => import('@/views/admin/DefinitionList.vue') },
-        { path: 'users', component: () => import('@/views/admin/UserList.vue') },
+
+        // 通用详情页
         { path: 'instance/:id', component: () => import('@/views/InstanceDetail.vue') },
         { path: 'draft-edit/:id', component: () => import('@/views/DraftEdit.vue') },
         { path: 'resubmit-edit/:id', component: () => import('@/views/ResubmitEdit.vue') },
         { path: 'task/:taskId', component: () => import('@/views/TaskDetail.vue') },
+
+        // 管理员页面
+        { path: 'definitions', component: () => import('@/views/admin/DefinitionList.vue') },
+        { path: 'users', component: () => import('@/views/admin/UserList.vue') },
+
+        // 流程定义（新增 + 详情/编辑，共用同一个组件）
         {
           path: 'admin/definition/create',
           component: () => import('@/views/admin/DefinitionDetail.vue'),

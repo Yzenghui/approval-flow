@@ -15,6 +15,7 @@ public class UserResponse {
     private String email;
     private String roleCode;
     private String roleName;
+    private Long managerId;
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

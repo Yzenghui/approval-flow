@@ -105,6 +105,7 @@ public class UserServiceImpl implements UserService {
             userResponse.setUsername(user.getUsername());
             userResponse.setName(user.getName());
             userResponse.setEmail(user.getEmail());
+            userResponse.setManagerId(user.getManagerId());
             userResponse.setStatus(user.getStatus());
             userResponse.setCreateTime(user.getCreateTime());
             userResponse.setUpdateTime(user.getUpdateTime());
@@ -296,6 +297,7 @@ public class UserServiceImpl implements UserService {
         userResponse.setEmail(user.getEmail());
         userResponse.setRoleCode(roleMapper.selectRoleCodeByUserId(id));
         userResponse.setRoleName(roleMapper.selectRoleNameByUserId(id));
+        userResponse.setManagerId(user.getManagerId());
         userResponse.setStatus(user.getStatus());
         userResponse.setCreateTime(user.getCreateTime());
         userResponse.setUpdateTime(user.getUpdateTime());

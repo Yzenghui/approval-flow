@@ -72,23 +72,23 @@
 
       <!-- 底部操作栏 -->
       <div class="action-bar">
-        <!-- 草稿状态：显示编辑 + 提交 -->
-        <template v-if="detail.status === 0">
+        <!-- 草稿状态：显示编辑 + 提交（仅发起人可见） -->
+        <template v-if="detail.status === 0 && isInitiator">
           <el-button type="primary" @click="handleEditDraft">编辑</el-button>
           <el-button type="success" @click="handleSubmitDraft">提交</el-button>
         </template>
 
-        <!-- 驳回/撤回：显示修改重提 -->
+        <!-- 驳回/撤回：显示修改重提（仅发起人可见） -->
         <el-button
-          v-if="detail.status === 3 || detail.status === 4"
+          v-if="(detail.status === 3 || detail.status === 4) && isInitiator"
           type="primary"
           @click="handleModifyResubmit"
         >
           修改重提
         </el-button>
 
-        <!-- 审批中：显示撤回 -->
-        <el-button v-if="detail.status === 1" type="danger" @click="handleWithdraw">
+        <!-- 审批中：显示撤回（仅发起人可见） -->
+        <el-button v-if="detail.status === 1 && isInitiator" type="danger" @click="handleWithdraw">
           撤回
         </el-button>
       </div>
@@ -101,14 +101,21 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 const instanceId = route.params.id
 
 const loading = ref(false)
 const detail = ref({})
 const records = ref([])
+
+// 判断当前用户是否为发起人
+const isInitiator = computed(() => {
+  return userStore.userInfo?.id === detail.value.initiatorId
+})
 
 const statusMap = {
   0: { text: '草稿', type: 'info' },

@@ -44,7 +44,6 @@
             <el-option label="主管" value="MANAGER" />
             <el-option label="经理" value="DIRECTOR" />
             <el-option label="总监" value="PRESIDENT" />
-            <el-option label="管理员" value="ADMIN" />
           </el-select>
           <span v-else>{{ form.roleCode || '—' }}</span>
         </el-descriptions-item>

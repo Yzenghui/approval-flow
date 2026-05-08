@@ -67,9 +67,3 @@ backend/*-dev.yml
 # 保留模板示例
 !backend/src/main/resources/application.yml
 !backend/src/main/resources/application-template.yml
-
-# =============================================
-# 项目特定
-# =============================================
-*.md
-!README.md

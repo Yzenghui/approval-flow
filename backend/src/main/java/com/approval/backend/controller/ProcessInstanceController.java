@@ -51,6 +51,19 @@ public class ProcessInstanceController {
     }
 
     /**
+     * 获取单个可用流程详情
+     *
+     * @param definitionId 流程定义ID
+     * @return 流程详情
+     */
+    @GetMapping("/available-definitions/{definitionId}")
+    @SaCheckLogin
+    public Result<?> getAvailableProcessDetail(@PathVariable Long definitionId) {
+        AvailableProcessResponse result = processInstanceService.getAvailableProcessDetail(definitionId, StpUtil.getLoginIdAsLong());
+        return Result.success(result);
+    }
+
+    /**
      * 新建并提交申请
      *
      * @param submitApplicationRequest 新建并提交申请请求数据传输对象

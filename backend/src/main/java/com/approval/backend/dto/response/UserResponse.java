@@ -16,6 +16,7 @@ public class UserResponse {
     private String roleCode;
     private String roleName;
     private Long managerId;
+    /** 状态：0禁用 1启用 */
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

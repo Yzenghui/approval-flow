@@ -17,6 +17,7 @@ public class ProcessDefinition {
     private String name;
     private Integer version;
     private String roleCode;
+    /** 状态：0禁用 1启用 */
     private Integer status;
     private String formSchema;
 

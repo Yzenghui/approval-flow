@@ -4,7 +4,6 @@ import com.approval.backend.dto.request.LoginRequest;
 import com.approval.backend.dto.request.RegisterRequest;
 import com.approval.backend.dto.response.LoginResponse;
 import com.approval.backend.dto.response.RegisterResponse;
-import com.approval.backend.entity.User;
 
 /**
  * 认证服务接口

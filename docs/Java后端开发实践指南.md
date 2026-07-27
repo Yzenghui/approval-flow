@@ -386,7 +386,7 @@ public class ImsApplication {
 >   • **创建时机**：由 Bean 自身的**作用域**决定  
 >
 >         单例（默认）：容器启动时初始化（`@Lazy` 标记则延迟至首次被注入时）  
->                                                                                     
+>                                                                                           
 >         原型（`@Scope("prototype")`）：每次从容器获取时（注入或 `getBean()`）新建实例  
 >   • **创建机制**：Spring 采用 **"链式创建"**（**通用机制，与作用域无关**）  
 >     创建任意 Bean 时，均先递归创建其所有声明的依赖（遵循**各依赖自身的作用域规则**），并将这些**完整实例**传入目标 Bean 。
@@ -433,20 +433,20 @@ public class ImsApplication {
 >   @Service
 >   public class OrderService {
 >       private final PaymentService paymentService;
->                             
+>                               
 >       // 单构造器：参数列表 = 依赖声明，@Autowired 可省略
 >       public OrderService(PaymentService paymentService) {
 >           this.paymentService = paymentService; // 参数已是容器注入完成的 Bean 实例
 >       }
 >   }
->                             
+>                               
 >   @RestController
 >   public class OrderController {
 >       private final OrderService orderService;
 >       public OrderController(OrderService orderService) { // OrderService 作为完整实例传入
 >           this.orderService = orderService;
 >       }
->                             
+>                               
 >       @PostMapping("/orders")
 >       public String createOrder() {
 >           orderService.process();
@@ -3327,6 +3327,7 @@ public class UserController {
 ```
 
 > **注解说明**：
+>
 > - `@SaCheckLogin`：校验是否登录
 > - `@SaCheckRole("xxx")`：校验角色（支持多角色，默认 AND 模式）
 > - `@SaCheckPermission("xxx")`：校验权限
@@ -3510,19 +3511,20 @@ User cached = (User) StpUtil.getSession().get("user");
 
 ##### 开发阶段（联调）
 
-**同源策略**：浏览器要求页面只能请求“协议 + 域名 + 端口”完全相同的地址。前后端端口不同时（如前端 `5173`、后端 `8080`），请求会被浏览器拦截，这就是跨域问题。
+**同源策略**：浏览器要求页面只能请求“协议 + 域名 + 端口”完全相同的地址。前后端端口不同时（如前端 `5173`、后端 `8080`），浏览器会正常发出请求，后端也能收到并处理，但浏览器会拦截响应数据，不交给前端 JavaScript，导致前端无法获取返回结果，这就是跨域问题。
 
 前后端分别在自己的环境中运行：
 - 后端：Spring Boot 运行在本地或开发服务器，例如 `http://localhost:8080`
 - 前端：Vue 开发服务器运行在 `http://localhost:5173`（Vite）
 
 解决跨域有两种方式：
-- **后端配置 CORS**：后端告诉浏览器“我允许你请求”，需明确允许前端的源（`http://localhost:5173`）
-- **前端配置代理**（Vite 或 Webpack Dev Server 自带）：将 `/api` 请求转发到后端地址，浏览器只接触到前端地址，不触发跨域检查
+- **后端配置 CORS**：后端在响应头中设置 `Access-Control-Allow-Origin: http://localhost:5173`，明确告知浏览器：该响应的数据允许被该源的前端代码读取。浏览器收到响应后会检查该头，通过则把数据交给前端，否则拦截。
+- **前端配置代理**（Vite 或 Webpack Dev Server 自带）：浏览器请求与页面同源的前端开发服务器（如 `http://localhost:5173`），不涉及跨域；开发服务器再将请求转发给真正的后端（如 `http://localhost:8080`）。由于服务器之间没有跨域限制，从而避免了浏览器的同源策略拦截。
 
 如果后端暂时无法本地运行，也可以提前部署到云端（公网服务器或内网穿透工具如 ngrok），前端直接调用公网 API 地址进行联调。
 
 **多环境配置**：
+
 - 前端使用 `.env.development` 和 `.env.production` 切换 API 基地址
 - 后端使用 `application-dev.yml` 和 `application-prod.yml` 切换数据库、端口等配置
 

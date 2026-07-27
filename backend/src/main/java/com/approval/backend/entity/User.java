@@ -20,6 +20,7 @@ public class User {
     private String email;
     private Long roleId;
     private Long managerId;
+    /** 状态：0禁用 1启用 */
     private Integer status;
 
     @TableField(fill = FieldFill.INSERT)

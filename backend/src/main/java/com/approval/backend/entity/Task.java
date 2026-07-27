@@ -19,6 +19,7 @@ public class Task {
     private String nodeName;
     private Long assigneeId;
     private Integer submitRound;
+    /** 状态：0待处理 1已处理 2已取消 */
     private Integer status;
 
     @TableField(fill = FieldFill.INSERT)

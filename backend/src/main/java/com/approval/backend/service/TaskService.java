@@ -1,7 +1,6 @@
 package com.approval.backend.service;
 
 import com.approval.backend.common.PageResult;
-import com.approval.backend.dto.request.RejectRequest;
 import com.approval.backend.dto.response.CompletedTaskResponse;
 import com.approval.backend.dto.response.PendingTaskResponse;
 

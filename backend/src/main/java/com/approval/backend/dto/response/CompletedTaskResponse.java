@@ -15,6 +15,7 @@ public class CompletedTaskResponse {
     private String nodeName;
     private String initiatorName;
     private String formData;
+    /** 操作类型：0提交 1通过 2驳回 3撤回 4修改重提 */
     private Integer action;
     private LocalDateTime createTime;
     private LocalDateTime completeTime;

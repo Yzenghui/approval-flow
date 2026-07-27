@@ -17,6 +17,7 @@ public class Role {
     private String code;
     private String name;
     private Integer level;
+    /** 状态：0禁用 1启用 */
     private Integer status;
 
     @TableField(fill = FieldFill.INSERT)

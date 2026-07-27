@@ -92,6 +92,36 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     }
 
     /**
+     * 获取单个可用流程详情
+     *
+     * @param definitionId 流程定义ID
+     * @param userId       用户ID
+     * @return 流程详情
+     */
+    @Override
+    public AvailableProcessResponse getAvailableProcessDetail(Long definitionId, Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(400, "用户不存在");
+        }
+
+        ProcessDefinition processDefinition = processDefinitionMapper.selectById(definitionId);
+        if (processDefinition == null
+                || !processDefinition.getStatus().equals(1)
+                || (processDefinition.getRoleCode() != null
+                && !processDefinition.getRoleCode().equals(roleMapper.selectRoleCodeByUserId(userId)))) {
+            throw new BusinessException(400, "流程不存在或已禁用");
+        }
+
+        AvailableProcessResponse response = new AvailableProcessResponse();
+        response.setId(processDefinition.getId());
+        response.setName(processDefinition.getName());
+        response.setRoleCode(processDefinition.getRoleCode());
+        response.setFormSchema(processDefinition.getFormSchema());
+        return response;
+    }
+
+    /**
      * 新建并提交申请
      *
      * @param submitApplicationRequest 新建并提交申请请求数据传输对象
@@ -364,6 +394,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                     myInstanceResponse.setId(processInstance.getId());
                     myInstanceResponse.setDefinitionId(processInstance.getDefinitionId());
                     myInstanceResponse.setDefinitionName(processInstance.getDefinitionName());
+                    myInstanceResponse.setInitiatorId(processInstance.getInitiatorId());
                     myInstanceResponse.setFormData(processInstance.getFormData());
                     myInstanceResponse.setSubmitCount(processInstance.getSubmitCount());
                     myInstanceResponse.setStatus(processInstance.getStatus());
@@ -404,6 +435,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         processInstanceDetailResponse.setId(processInstance.getId());
         processInstanceDetailResponse.setDefinitionId(processInstance.getDefinitionId());
         processInstanceDetailResponse.setDefinitionName(processInstance.getDefinitionName());
+        processInstanceDetailResponse.setInitiatorId(processInstance.getInitiatorId());
         processInstanceDetailResponse.setFormData(processInstance.getFormData());
         processInstanceDetailResponse.setSubmitCount(processInstance.getSubmitCount());
         processInstanceDetailResponse.setStatus(processInstance.getStatus());

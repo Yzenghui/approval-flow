@@ -8,11 +8,11 @@
         </div>
       </template>
 
-      <!-- 流程已禁用提示 -->
+      <!-- 流程不可用提示 -->
       <el-alert
         v-if="flowDisabled"
-        title="流程已被禁用"
-        description="该申请关联的流程已被管理员禁用，无法编辑或提交。请返回列表页，重新发起申请。"
+        title="流程配置加载失败"
+        :description="errorMessage || '该流程可能已被禁用或当前账号无法访问该流程，请联系管理员确认'"
         type="warning"
         show-icon
         :closable="false"
@@ -96,6 +96,7 @@ const definitionId = ref(null)
 const definitionName = ref('')
 const currentDefinitionName = ref('')
 const flowDisabled = ref(false)
+const errorMessage = ref('')
 
 // 动态生成校验规则
 const formRules = computed(() => {
@@ -123,34 +124,31 @@ const loadData = async () => {
         formData.value = parsed
       }
 
-      // 2. 从可用流程列表中获取 formSchema
-      const defRes = await request.get('/user/available-definitions', {
-        params: { pageNum: 1, pageSize: 100 },
-      })
-      if (defRes.code === 200) {
-        const definitions = defRes.data.records || []
-        const matched = definitions.find((d) => d.id === definitionId.value)
+      // 2. 获取流程详情（单个接口）
+      try {
+        const defRes = await request.get(`/user/available-definitions/${definitionId.value}`)
+        if (defRes.code === 200) {
+          const matched = defRes.data
 
-        if (!matched) {
-          flowDisabled.value = true
-          formSchema.value = []
-          ElMessage.warning('该申请关联的流程已被禁用，无法修改重提')
-          return
-        }
+          currentDefinitionName.value = matched.name || ''
 
-        currentDefinitionName.value = matched.name || ''
-
-        // 解析 formSchema
-        let schema = matched.formSchema
-        if (typeof schema === 'string') {
-          try {
-            schema = JSON.parse(schema)
-          } catch (e) {
-            console.error('解析 formSchema 失败', e)
-            schema = []
+          // 解析 formSchema
+          let schema = matched.formSchema
+          if (typeof schema === 'string') {
+            try {
+              schema = JSON.parse(schema)
+            } catch (e) {
+              console.error('解析 formSchema 失败', e)
+              schema = []
+            }
           }
+          formSchema.value = schema || []
         }
-        formSchema.value = schema || []
+      } catch (err) {
+        console.error('获取流程详情失败', err)
+        flowDisabled.value = true
+        errorMessage.value = err.message || ''
+        formSchema.value = []
       }
     }
   } catch (error) {

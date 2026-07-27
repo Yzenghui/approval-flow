@@ -20,6 +20,15 @@ public interface ProcessInstanceService {
     PageResult<AvailableProcessResponse> listAvailableProcesses(Integer pageNum, Integer pageSize, Long id);
 
     /**
+     * 获取单个可用流程详情
+     *
+     * @param definitionId 流程定义ID
+     * @param userId       用户ID
+     * @return 流程详情
+     */
+    AvailableProcessResponse getAvailableProcessDetail(Long definitionId, Long userId);
+
+    /**
      * 新建并提交申请
      *
      * @param submitApplicationRequest 新建并提交申请请求数据传输对象

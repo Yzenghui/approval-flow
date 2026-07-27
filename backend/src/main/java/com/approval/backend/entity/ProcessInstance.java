@@ -19,6 +19,7 @@ public class ProcessInstance {
     private Long initiatorId;
     private String formData;
     private Integer submitCount;
+    /** 状态：0草稿 1审批中 2通过 3驳回 4撤回 */
     private Integer status;
 
     @TableField(fill = FieldFill.INSERT)

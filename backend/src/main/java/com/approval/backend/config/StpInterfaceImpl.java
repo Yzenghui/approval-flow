@@ -2,7 +2,6 @@ package com.approval.backend.config;
 
 import cn.dev33.satoken.stp.StpInterface;
 import com.approval.backend.mapper.RoleMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

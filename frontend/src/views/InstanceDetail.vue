@@ -72,22 +72,22 @@
 
       <!-- 底部操作栏 -->
       <div class="action-bar">
-        <!-- 草稿状态：显示编辑 + 提交（仅发起人可见） -->
-        <template v-if="detail.status === 0 && isInitiator">
+        <!-- 草稿状态：显示编辑 + 提交 -->
+        <template v-if="detail.status === 0">
           <el-button type="primary" @click="handleEditDraft">编辑</el-button>
           <el-button type="success" @click="handleSubmitDraft">提交</el-button>
         </template>
 
-        <!-- 驳回/撤回：显示修改重提（仅发起人可见） -->
+        <!-- 驳回/撤回：显示修改重提 -->
         <el-button
-          v-if="(detail.status === 3 || detail.status === 4) && isInitiator"
+          v-if="detail.status === 3 || detail.status === 4"
           type="primary"
           @click="handleModifyResubmit"
         >
           修改重提
         </el-button>
 
-        <!-- 审批中：显示撤回（仅发起人可见） -->
+        <!-- 审批中且是发起人：显示撤回 -->
         <el-button v-if="detail.status === 1 && isInitiator" type="danger" @click="handleWithdraw">
           撤回
         </el-button>

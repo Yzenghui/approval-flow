@@ -2820,7 +2820,7 @@ axios.get(`/api/users/${userId}`);
 // Query String：必须使用 params（显式写出）
 axios.get('/api/users', { params: { page: 1, size: 10 } });
 
-// 请求体：PO直接将对象作为第二个参数
+// 请求体：直接将对象作为第二个参数
 axios.post('/api/users', { name: '张三', age: 18 });
 ```
 

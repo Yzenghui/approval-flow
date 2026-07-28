@@ -25,6 +25,47 @@ Authorization: {{user_token}}
 GET http://localhost:8080/api/user/available-definitions
 
 ### ========================================
+### 获取单个可用流程详情测试（新增接口）
+### ========================================
+
+### 登录获取 Token（zhangsan - 员工角色）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+
+> {% client.global.set("user_token", response.body.data.token); %}
+
+### 获取单个流程详情 - 正常查询（ID=1）
+GET http://localhost:8080/api/user/available-definitions/1
+Authorization: {{user_token}}
+
+### 获取单个流程详情 - 流程不存在（ID=999）
+GET http://localhost:8080/api/user/available-definitions/999
+Authorization: {{user_token}}
+
+### 获取单个流程详情 - 未登录（应返回 401）
+GET http://localhost:8080/api/user/available-definitions/1
+
+### 获取单个流程详情 - 无权限流程（使用 admin 登录，通常角色为管理员）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### 获取单个流程详情 - 用 admin 访问员工角色流程（可能无权限）
+GET http://localhost:8080/api/user/available-definitions/1
+Authorization: {{admin_token}}
+
+### ========================================
 ### 新建草稿功能测试
 ### ========================================
 

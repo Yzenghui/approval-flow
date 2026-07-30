@@ -117,9 +117,6 @@ function main() {
   log(`  前端地址: ${colors.green}http://localhost:5173${colors.cyan}`);
   log(`  后端地址: ${colors.green}http://localhost:8080${colors.cyan}`);
   log('');
-  log('  测试账号:');
-  log('    管理员: admin / 123456');
-  log('    员工:   zhangsan / 123456');
   log('============================================', colors.cyan);
   log('');
   log('[提示] 要停止服务，请运行: node stop.js', colors.yellow);

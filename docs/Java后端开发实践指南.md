@@ -386,7 +386,7 @@ public class ImsApplication {
 >   • **创建时机**：由 Bean 自身的**作用域**决定  
 >
 >         单例（默认）：容器启动时初始化（`@Lazy` 标记则延迟至首次被注入时）  
->                                                                                           
+>                                                                                                 
 >         原型（`@Scope("prototype")`）：每次从容器获取时（注入或 `getBean()`）新建实例  
 >   • **创建机制**：Spring 采用 **"链式创建"**（**通用机制，与作用域无关**）  
 >     创建任意 Bean 时，均先递归创建其所有声明的依赖（遵循**各依赖自身的作用域规则**），并将这些**完整实例**传入目标 Bean 。
@@ -433,20 +433,20 @@ public class ImsApplication {
 >   @Service
 >   public class OrderService {
 >       private final PaymentService paymentService;
->                               
+>                                 
 >       // 单构造器：参数列表 = 依赖声明，@Autowired 可省略
 >       public OrderService(PaymentService paymentService) {
 >           this.paymentService = paymentService; // 参数已是容器注入完成的 Bean 实例
 >       }
 >   }
->                               
+>                                 
 >   @RestController
 >   public class OrderController {
 >       private final OrderService orderService;
 >       public OrderController(OrderService orderService) { // OrderService 作为完整实例传入
 >           this.orderService = orderService;
 >       }
->                               
+>                                 
 >       @PostMapping("/orders")
 >       public String createOrder() {
 >           orderService.process();
@@ -2862,6 +2862,11 @@ public class UserRegisterDTO {
     private String phone;
 }
 ```
+
+> **Lombok `@Data` 继承注意事项**：  
+> 当子类使用 `@Data` 且继承了父类时，Lombok 生成的 `equals()` / `hashCode()` **默认不包含父类字段**。  
+> 这会导致两个子类对象仅凭自身字段判断相等，忽略父类字段，在 `HashSet` / `HashMap` 等判重场景下可能引发逻辑错误。  
+> **解决方案**：对子类显式添加 `@EqualsAndHashCode(callSuper = true)` 以纳入父类字段。
 
 ##### 常用校验注解速查表
 

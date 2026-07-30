@@ -64,27 +64,42 @@ mysql -u root -p approval_flow < docs/sql/schema.sql
 
 （脚本中已包含流程定义、节点配置、用户角色等示例数据）
 
-### 3. 后端启动
+### 3. 启动服务
+
+#### 方式一：一键启动脚本（推荐）
+
+项目根目录提供了 Node.js 脚本，可同时启动前后端服务：
 
 ```bash
-cd backend
-mvn clean install
-mvn spring-boot:run
+# 启动
+node start.js
+
+# 停止
+node stop.js
 ```
 
-后端默认监听 `8080` 端口。
+- 脚本会自动检测 Java / Node.js 环境、安装前端依赖
+- 后端（Spring Boot，端口 8080）先启动，等待 15 秒后再启动前端（Vite，端口 5173）
+- 前端 Vite 代理自动将 `/api` 请求转发至后端 8080，无跨域问题
 
-若需修改数据库/Redis等配置，请编辑 `src/main/resources/application.yml`。
+#### 方式二：手动启动
 
-### 4. 前端启动
+分别启动后端和前端：
 
 ```bash
+# 后端
+cd backend
+mvn spring-boot:run
+
+# 前端（另开一个终端）
 cd frontend
 npm install
 npm run dev
 ```
 
-前端默认监听 `5173` 端口，Vite 代理会将 `/api` 请求转发至后端 `8080`，无跨域问题。
+后端默认监听 `8080` 端口，前端默认监听 `5173` 端口。
+
+若需修改数据库/Redis等配置，请编辑 `backend/src/main/resources/application.yml`。
 
 ## 项目结构
 
@@ -101,8 +116,8 @@ approval-flow/
 ├── docs/
 │   └── sql/
 │       └── schema.sql      # 建表脚本及初始数据
-├── docker-compose.yml      # 容器编排（MySQL + 后端 + Nginx）
-├── nginx.conf              # Nginx 配置（生产环境代理前端静态文件及 API）
+├── start.js                # 一键启动脚本（同时启动前后端）
+├── stop.js                 # 一键停止脚本（按端口终止进程）
 ├── .gitignore
 └── README.md
 ```

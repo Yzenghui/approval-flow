@@ -2727,11 +2727,61 @@ $--color-success: #67c23a;
 
 ## 模块七：工程化实践
 
-> 本模块介绍 Vue 项目中工程化相关的核心实践，包括接口请求封装（Axios）、环境变量配置、开发代理配置以及代码规范（ESLint / Prettier）。这些实践可提升代码质量、团队协作效率和项目可维护性。
+> 本模块介绍 Vue 项目中工程化相关的核心实践，包括环境变量配置、接口请求封装（Axios）、开发代理配置以及代码规范（ESLint / Prettier）。这些实践可提升代码质量、团队协作效率和项目可维护性。
 
 ---
 
-### 7.1 Axios 封装
+### 7.1 环境变量配置
+
+不同环境（开发、测试、生产）通常对应不同的接口地址。通过 `.env` 文件管理环境变量，开发与生产共用一套代码。
+
+#### 文件命名规则
+
+| 文件名             | 用途                        |
+| ------------------ | --------------------------- |
+| `.env.development` | 开发环境（`npm run dev`）   |
+| `.env.production`  | 生产环境（`npm run build`） |
+
+#### 变量定义
+
+以 `VITE_` 开头的变量才会暴露给客户端：
+
+```env
+# .env.development
+# axios 的 baseURL，使用路径前缀 /api
+VITE_API_BASE_URL = /api
+# Vite 代理转发的目标地址，仅开发环境使用
+VITE_PROXY_TARGET = http://localhost:8080
+
+# .env.production（生产环境由 Nginx 处理转发，无需代理变量）
+VITE_API_BASE_URL = /api
+```
+
+> `baseURL` 推荐设为路径前缀（如 `/api`），而非完整域名：
+>
+> - 业务代码中 `request.get('/user/login')` 会自动拼接为 `/api/user/login`
+> - 开发环境通过 Vite 代理将 `/api` 转发到后端
+> - 生产环境通过 Nginx 转发
+> - 两套环境均无需修改业务代码
+>
+> 如果将 `baseURL` 设为完整域名（如 `http://localhost:8080/api`），开发环境要么需要 Vite 代理做 rewrite 去掉域名部分，要么后端配置 CORS 允许跨域，均增加了复杂度。
+
+#### 变量使用
+
+```javascript
+// Vite 项目中读取
+const baseURL = import.meta.env.VITE_API_BASE_URL;
+const title = import.meta.env.VITE_APP_TITLE;
+
+// Vue CLI 项目（变量名必须以 VUE_APP_ 开头）
+const baseURL = process.env.VUE_APP_API_BASE_URL;
+```
+
+> 不同构建工具读取环境变量的方式不同：Vite 使用 `import.meta.env`，Vue CLI 使用 `process.env`。
+
+---
+
+### 7.2 Axios 封装
 
 Axios 是 Vue 项目中最常用的 HTTP 客户端库，用于调用后端接口。建议在项目中统一封装 Axios 实例，添加请求/响应拦截器，统一处理 Token、错误提示、请求超时等。
 
@@ -2749,7 +2799,7 @@ import { ElMessage } from 'element-plus';  // Element Plus 消息提示
 
 // 创建 Axios 实例
 const service = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,  // 基础 URL，从环境变量读取
+  baseURL: import.meta.env.VITE_API_BASE_URL,  // 基础 URL，从环境变量读取，所有请求的 URL 都会以该值为前缀
   timeout: 10000,  // 请求超时（毫秒）
   headers: { 'Content-Type': 'application/json;charset=utf-8' }
 });
@@ -2874,88 +2924,54 @@ const handleLogin = async () => {
 
 ---
 
-### 7.2 环境变量配置
-
-不同环境（开发、测试、生产）通常对应不同的接口地址、AppKey 等。Vue CLI 和 Vite 都支持通过 `.env` 文件配置环境变量。
-
-#### 文件命名规则
-
-| 文件名             | 用途                        |
-| ------------------ | --------------------------- |
-| `.env.development` | 开发环境（`npm run dev`）   |
-| `.env.production`  | 生产环境（`npm run build`） |
-
-#### 变量定义与使用
-
-**定义**（以 `VITE_` 开头的变量才会暴露给客户端）：
-```env
-# .env.development
-VITE_API_BASE_URL = http://localhost:8080/api
-VITE_APP_TITLE = 开发环境
-
-# .env.production
-VITE_API_BASE_URL = https://api.example.com/api
-VITE_APP_TITLE = 生产环境
-```
-
-**使用**：
-```javascript
-// Vite 项目
-const baseURL = import.meta.env.VITE_API_BASE_URL;
-const title = import.meta.env.VITE_APP_TITLE;
-
-// Vue CLI 项目（变量名必须以 VUE_APP_ 开头）
-const baseURL = process.env.VUE_APP_API_BASE_URL;
-```
-
-> 不同构建工具读取环境变量的方式不同：Vite 使用 `import.meta.env`，Vue CLI 使用 `process.env`。
-
----
-
 ### 7.3 代理配置
 
-开发环境中，前端服务（如 `http://localhost:5173`）与后端接口（如 `http://localhost:8080`）存在跨域问题。通过代理将前端请求转发到后端可解决跨域。
+开发环境中，前端服务（如 `http://localhost:5173`）与后端接口（如 `http://localhost:8080`）存在跨域问题，通过代理将前端请求转发到后端可解决跨域。
 
 #### Vite 代理配置（`vite.config.js`）
 
 ```javascript
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
-export default defineConfig({
-  plugins: [vue()],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
-  }
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, '.');
+
+  return {
+    plugins: [vue()],
+    server: {
+      proxy: {
+        [env.VITE_API_BASE_URL]: {
+          target: env.VITE_PROXY_TARGET,
+          changeOrigin: true,
+        },
+      },
+    },
+  };
 });
 ```
 
-**效果**：
-- 前端请求 `/api/user/login` → 代理转发到 `http://localhost:8080/user/login`
+**效果**：例如，前端请求 `/api/user/login` → 代理转发到 `http://localhost:8080/api/user/login`
 
 #### Vue CLI 代理配置（`vue.config.js`）
 
+Vue CLI 使用 `VUE_APP_` 前缀的环境变量：
+
 ```javascript
+const apiBaseUrl = process.env.VUE_APP_API_BASE_URL || '/api';
+const proxyTarget = process.env.VUE_APP_PROXY_TARGET || 'http://localhost:8080';
+
 module.exports = {
   devServer: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
+      [apiBaseUrl]: {
+        target: proxyTarget,
         changeOrigin: true,
-        pathRewrite: { '^/api': '' }
-      }
-    }
-  }
+      },
+    },
+  },
 };
 ```
-
-使用代理后，前端代码中的 `baseURL` 可直接设为 `/api`，无需写完整域名。
 
 ---
 

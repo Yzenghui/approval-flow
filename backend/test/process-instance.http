@@ -25,7 +25,7 @@ Authorization: {{user_token}}
 GET http://localhost:8080/api/user/available-definitions
 
 ### ========================================
-### 获取单个可用流程详情测试（新增接口）
+### 获取单个可用流程详情测试
 ### ========================================
 
 ### 登录获取 Token（zhangsan - 员工角色）
@@ -61,7 +61,7 @@ Content-Type: application/json
 
 > {% client.global.set("admin_token", response.body.data.token); %}
 
-### 获取单个流程详情 - 用 admin 访问员工角色流程（可能无权限）
+### 获取单个流程详情 - 用 admin 访问员工角色流程（无权限）
 GET http://localhost:8080/api/user/available-definitions/1
 Authorization: {{admin_token}}
 

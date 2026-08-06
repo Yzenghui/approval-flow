@@ -2,6 +2,7 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.common.RedisLockUtil;
 import com.approval.backend.dto.response.CompletedTaskResponse;
 import com.approval.backend.dto.response.PendingTaskResponse;
 import com.approval.backend.entity.*;
@@ -33,14 +34,16 @@ public class TaskServiceImpl implements TaskService {
     private final ProcessInstanceMapper processInstanceMapper;
     private final TaskMapper taskMapper;
     private final ApprovalRecordMapper approvalRecordMapper;
+    private final RedisLockUtil redisLockUtil;
 
-    public TaskServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper) {
+    public TaskServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper, RedisLockUtil redisLockUtil) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.processNodeMapper = processNodeMapper;
         this.processInstanceMapper = processInstanceMapper;
         this.taskMapper = taskMapper;
         this.approvalRecordMapper = approvalRecordMapper;
+        this.redisLockUtil = redisLockUtil;
     }
 
     /**
@@ -114,37 +117,50 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void approveTask(Long taskId, String remark, Long userId) {
-        LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
-                .eq(Task::getId, taskId)
-                .eq(Task::getStatus, 0);
-        Task task = taskMapper.selectOne(queryWrapper);
-        if (task == null) {
-            throw new BusinessException("任务不存在或已处理");
+        String lockKey = "task:lock:" + taskId;
+        String lockValue = redisLockUtil.tryLock(lockKey, 15);
+        if (lockValue == null) {
+            throw new BusinessException("任务正在处理中，请勿重复提交");
         }
 
-        if (!task.getAssigneeId().equals(userId)) {
-            throw new BusinessException("无权处理此任务");
+        try {
+            LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
+                    .eq(Task::getId, taskId)
+                    .eq(Task::getStatus, 0);
+            Task task = taskMapper.selectOne(queryWrapper);
+            if (task == null) {
+                throw new BusinessException("任务不存在或已处理");
+            }
+
+            if (!task.getAssigneeId().equals(userId)) {
+                throw new BusinessException("无权处理此任务");
+            }
+
+            int updated = taskMapper.update(null, new LambdaUpdateWrapper<Task>()
+                    .eq(Task::getId, taskId)
+                    .eq(Task::getStatus, 0)
+                    .set(Task::getStatus, 1));
+            if (updated == 0) {
+                throw new BusinessException("任务正在处理中，请勿重复提交");
+            }
+
+            boolean hasNext = createNextTask(task);
+            if (!hasNext) {
+                processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
+                        .eq(ProcessInstance::getId, task.getInstanceId())
+                        .set(ProcessInstance::getStatus, 2));
+            }
+
+            ApprovalRecord approvalRecord = new ApprovalRecord();
+            approvalRecord.setInstanceId(task.getInstanceId());
+            approvalRecord.setOperatorId(userId);
+            approvalRecord.setTaskId(task.getId());
+            approvalRecord.setAction(1);
+            approvalRecord.setRemark(remark);
+            approvalRecordMapper.insert(approvalRecord);
+        } finally {
+            redisLockUtil.unlock(lockKey, lockValue);
         }
-
-        taskMapper.update(null, new LambdaUpdateWrapper<Task>()
-                .eq(Task::getId, taskId)
-                .set(Task::getStatus, 1));
-
-        boolean hasNext = createNextTask(task);
-        if (!hasNext) {
-            processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
-                    .eq(ProcessInstance::getId, task.getInstanceId())
-                    .set(ProcessInstance::getStatus, 2));
-        }
-
-        ApprovalRecord approvalRecord = new ApprovalRecord();
-        approvalRecord.setInstanceId(task.getInstanceId());
-        approvalRecord.setOperatorId(userId);
-        approvalRecord.setTaskId(task.getId());
-        approvalRecord.setAction(1);
-        approvalRecord.setRemark(remark);
-        approvalRecordMapper.insert(approvalRecord);
-
     }
 
     /**
@@ -157,34 +173,47 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void rejectTask(Long taskId, String remark, Long userId) {
-        LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
-                .eq(Task::getId, taskId)
-                .eq(Task::getStatus, 0);
-        Task task = taskMapper.selectOne(queryWrapper);
-        if (task == null) {
-            throw new BusinessException("任务不存在或已处理");
+        String lockKey = "task:lock:" + taskId;
+        String lockValue = redisLockUtil.tryLock(lockKey, 15);
+        if (lockValue == null) {
+            throw new BusinessException("任务正在处理中，请勿重复提交");
         }
 
-        if (!task.getAssigneeId().equals(userId)) {
-            throw new BusinessException("无权处理此任务");
+        try {
+            LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
+                    .eq(Task::getId, taskId)
+                    .eq(Task::getStatus, 0);
+            Task task = taskMapper.selectOne(queryWrapper);
+            if (task == null) {
+                throw new BusinessException("任务不存在或已处理");
+            }
+
+            if (!task.getAssigneeId().equals(userId)) {
+                throw new BusinessException("无权处理此任务");
+            }
+
+            int updated = taskMapper.update(null, new LambdaUpdateWrapper<Task>()
+                    .eq(Task::getId, taskId)
+                    .eq(Task::getStatus, 0)
+                    .set(Task::getStatus, 1));
+            if (updated == 0) {
+                throw new BusinessException("任务正在处理中，请勿重复提交");
+            }
+
+            processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
+                    .eq(ProcessInstance::getId, task.getInstanceId())
+                    .set(ProcessInstance::getStatus, 3));
+
+            ApprovalRecord approvalRecord = new ApprovalRecord();
+            approvalRecord.setInstanceId(task.getInstanceId());
+            approvalRecord.setOperatorId(userId);
+            approvalRecord.setTaskId(task.getId());
+            approvalRecord.setAction(2);
+            approvalRecord.setRemark(remark);
+            approvalRecordMapper.insert(approvalRecord);
+        } finally {
+            redisLockUtil.unlock(lockKey, lockValue);
         }
-
-        taskMapper.update(null, new LambdaUpdateWrapper<Task>()
-                .eq(Task::getId, taskId)
-                .set(Task::getStatus, 1));
-
-        processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
-                .eq(ProcessInstance::getId, task.getInstanceId())
-                .set(ProcessInstance::getStatus, 3));
-
-        ApprovalRecord approvalRecord = new ApprovalRecord();
-        approvalRecord.setInstanceId(task.getInstanceId());
-        approvalRecord.setOperatorId(userId);
-        approvalRecord.setTaskId(task.getId());
-        approvalRecord.setAction(2);
-        approvalRecord.setRemark(remark);
-        approvalRecordMapper.insert(approvalRecord);
-
     }
 
     /**

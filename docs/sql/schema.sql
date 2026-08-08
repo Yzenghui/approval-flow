@@ -152,13 +152,13 @@ INSERT INTO `role` (`id`, `code`, `name`, `level`, `status`, `create_time`, `upd
 -- ======================================================
 -- 初始化用户数据
 -- ======================================================
--- 密码统一为：123456（BCrypt加密后的结果）
+-- 密码统一为：Admin@123（BCrypt加密后的结果）
 INSERT INTO `user` (`id`, `username`, `password`, `name`, `email`, `role_id`, `manager_id`, `status`) VALUES
-(1, 'admin', '$2a$10$VTZfA.AJ2L5Glab13GkbZefWjBhgQmLwkjePQlaeUU6MJny0.J0/G', '管理员', 'admin@example.com', 1, NULL, 1),
-(2, 'zhaoliu', '$2a$10$VTZfA.AJ2L5Glab13GkbZefWjBhgQmLwkjePQlaeUU6MJny0.J0/G', '赵六', 'zhaoliu@example.com', 5, NULL, 1),
-(3, 'lisi', '$2a$10$VTZfA.AJ2L5Glab13GkbZefWjBhgQmLwkjePQlaeUU6MJny0.J0/G', '李四', 'lisi@example.com', 4, 2, 1),
-(4, 'wangwu', '$2a$10$VTZfA.AJ2L5Glab13GkbZefWjBhgQmLwkjePQlaeUU6MJny0.J0/G', '王五', 'wangwu@example.com', 3, 3, 1),
-(5, 'zhangsan', '$2a$10$VTZfA.AJ2L5Glab13GkbZefWjBhgQmLwkjePQlaeUU6MJny0.J0/G', '张三', 'zhangsan@example.com', 2, 4, 1);
+(1, 'admin', '$2a$10$P5VUbno17Xwv54nSrs7S5Oaa1Nh1PR4E4uiEzo2RWyw2ObbeqM8c2', '管理员', 'admin@example.com', 1, NULL, 1),
+(2, 'zhaoliu', '$2a$10$P5VUbno17Xwv54nSrs7S5Oaa1Nh1PR4E4uiEzo2RWyw2ObbeqM8c2', '赵六', 'zhaoliu@example.com', 5, NULL, 1),
+(3, 'lisi', '$2a$10$P5VUbno17Xwv54nSrs7S5Oaa1Nh1PR4E4uiEzo2RWyw2ObbeqM8c2', '李四', 'lisi@example.com', 4, 2, 1),
+(4, 'wangwu', '$2a$10$P5VUbno17Xwv54nSrs7S5Oaa1Nh1PR4E4uiEzo2RWyw2ObbeqM8c2', '王五', 'wangwu@example.com', 3, 3, 1),
+(5, 'zhangsan', '$2a$10$P5VUbno17Xwv54nSrs7S5Oaa1Nh1PR4E4uiEzo2RWyw2ObbeqM8c2', '张三', 'zhangsan@example.com', 2, 4, 1);
 
 -- ======================================================
 -- 初始化流程定义数据

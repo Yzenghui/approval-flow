@@ -8,7 +8,7 @@ Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "123456"
+  "password": "Admin@123"
 }
 
 > {% client.global.set("admin_token", response.body.data.token); %}
@@ -26,7 +26,7 @@ Content-Type: application/json
 
 {
   "username": "zhangsan",
-  "password": "123456"
+  "password": "Admin@123"
 }
 
 > {% client.global.set("user_token", response.body.data.token); %}
@@ -85,7 +85,7 @@ Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "123456"
+  "password": "Admin@123"
 }
 
 > {% client.global.set("admin_token", response.body.data.token); %}
@@ -230,7 +230,7 @@ Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "123456"
+  "password": "Admin@123"
 }
 
 > {% client.global.set("admin_token", response.body.data.token); %}
@@ -338,7 +338,7 @@ Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "123456"
+  "password": "Admin@123"
 }
 
 > {% client.global.set("admin_token", response.body.data.token); %}
@@ -398,7 +398,7 @@ Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "123456"
+  "password": "Admin@123"
 }
 
 > {% client.global.set("admin_token", response.body.data.token); %}

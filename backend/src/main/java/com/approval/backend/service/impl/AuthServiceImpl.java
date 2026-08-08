@@ -14,7 +14,10 @@ import com.approval.backend.mapper.UserMapper;
 import com.approval.backend.service.AuthService;
 import com.approval.backend.dto.response.UserResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * 认证服务的具体实现类
@@ -23,10 +26,16 @@ import org.springframework.stereotype.Service;
 public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
+    private final StringRedisTemplate redisTemplate;
 
-    public AuthServiceImpl(UserMapper userMapper, RoleMapper roleMapper) {
+    private static final int MAX_FAIL_COUNT = 5;
+    private static final int LOCK_MINUTES = 5;
+    private static final String FAIL_KEY_PREFIX = "login:fail:";
+
+    public AuthServiceImpl(UserMapper userMapper, RoleMapper roleMapper, StringRedisTemplate redisTemplate) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
+        this.redisTemplate = redisTemplate;
     }
 
     /**
@@ -38,17 +47,34 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
+        String failKey = FAIL_KEY_PREFIX + loginRequest.getUsername();
+
+        String failCountStr = redisTemplate.opsForValue().get(failKey);
+        if (failCountStr != null && Integer.parseInt(failCountStr) >= MAX_FAIL_COUNT) {
+            throw new BusinessException(400, "账号已锁定，请5分钟后重试");
+        }
+
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, loginRequest.getUsername())
         );
 
         if (user == null || !BCrypt.checkpw(loginRequest.getPassword(), user.getPassword())) {
-            throw new BusinessException(400, "用户名或密码错误");
+            Long failCount = redisTemplate.opsForValue().increment(failKey);
+            if (failCount != null && failCount == 1) {
+                redisTemplate.expire(failKey, LOCK_MINUTES, TimeUnit.MINUTES);
+            }
+            if (failCount != null && failCount >= MAX_FAIL_COUNT) {
+                throw new BusinessException(400, "账号已锁定，请5分钟后重试");
+            }
+            int remaining = MAX_FAIL_COUNT - (failCount != null ? failCount.intValue() : 0);
+            throw new BusinessException(400, "用户名或密码错误，您还有" + remaining + "次尝试机会");
         }
 
         if (user.getStatus() != null && user.getStatus() != 1) {
             throw new BusinessException(403, "账号已被禁用，请联系管理员");
         }
+
+        redisTemplate.delete(failKey);
 
         StpUtil.login(user.getId());
         String token = StpUtil.getTokenValue();

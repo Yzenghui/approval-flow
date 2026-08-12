@@ -2,6 +2,7 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.common.ProcessCacheHelper;
 import com.approval.backend.common.RedisLockUtil;
 import com.approval.backend.dto.response.CompletedTaskResponse;
 import com.approval.backend.dto.response.PendingTaskResponse;
@@ -35,8 +36,9 @@ public class TaskServiceImpl implements TaskService {
     private final TaskMapper taskMapper;
     private final ApprovalRecordMapper approvalRecordMapper;
     private final RedisLockUtil redisLockUtil;
+    private final ProcessCacheHelper processCacheHelper;
 
-    public TaskServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper, RedisLockUtil redisLockUtil) {
+    public TaskServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper, RedisLockUtil redisLockUtil, ProcessCacheHelper processCacheHelper) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.processNodeMapper = processNodeMapper;
@@ -44,6 +46,7 @@ public class TaskServiceImpl implements TaskService {
         this.taskMapper = taskMapper;
         this.approvalRecordMapper = approvalRecordMapper;
         this.redisLockUtil = redisLockUtil;
+        this.processCacheHelper = processCacheHelper;
     }
 
     /**
@@ -297,18 +300,25 @@ public class TaskServiceImpl implements TaskService {
      * @return 是否创建成功
      */
     private boolean createNextTask(Task currentTask) {
-        ProcessNode currentProcessNode = processNodeMapper.selectById(currentTask.getNodeId());
-        List<ProcessNode> processNodes = processNodeMapper.selectList(new LambdaQueryWrapper<ProcessNode>()
-                .eq(ProcessNode::getDefinitionId, currentProcessNode.getDefinitionId())
-                .gt(ProcessNode::getNodeOrder, currentProcessNode.getNodeOrder())
-                .orderByAsc(ProcessNode::getNodeOrder)
-        );
+        ProcessInstance processInstance = processInstanceMapper.selectById(currentTask.getInstanceId());
+
+        // 节点列表为读多写少数据，走 cache-aside；缓存按 node_order 升序返回
+        List<ProcessNode> allNodes = processCacheHelper.getNodesByDefinitionId(processInstance.getDefinitionId());
+
+        // 从缓存列表中定位当前节点，避免额外 DB 查询
+        ProcessNode currentProcessNode = allNodes.stream()
+                .filter(n -> n.getId().equals(currentTask.getNodeId()))
+                .findFirst()
+                .orElseGet(() -> processNodeMapper.selectById(currentTask.getNodeId()));
+
+        List<ProcessNode> processNodes = allNodes.stream()
+                .filter(n -> n.getNodeOrder() > currentProcessNode.getNodeOrder())
+                .toList();
 
         if (processNodes.isEmpty()) {
             return false;
         }
 
-        ProcessInstance processInstance = processInstanceMapper.selectById(currentTask.getInstanceId());
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> env;
         try {

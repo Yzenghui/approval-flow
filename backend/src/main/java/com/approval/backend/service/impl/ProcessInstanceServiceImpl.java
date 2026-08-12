@@ -2,6 +2,7 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.common.ProcessCacheHelper;
 import com.approval.backend.dto.request.CreateDraftRequest;
 import com.approval.backend.dto.request.SubmitApplicationRequest;
 import com.approval.backend.dto.response.*;
@@ -32,19 +33,19 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
     private final ProcessDefinitionMapper processDefinitionMapper;
-    private final ProcessNodeMapper processNodeMapper;
     private final ProcessInstanceMapper processInstanceMapper;
     private final TaskMapper taskMapper;
     private final ApprovalRecordMapper approvalRecordMapper;
+    private final ProcessCacheHelper processCacheHelper;
 
-    public ProcessInstanceServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper) {
+    public ProcessInstanceServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper, ProcessCacheHelper processCacheHelper) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.processDefinitionMapper = processDefinitionMapper;
-        this.processNodeMapper = processNodeMapper;
         this.processInstanceMapper = processInstanceMapper;
         this.taskMapper = taskMapper;
         this.approvalRecordMapper = approvalRecordMapper;
+        this.processCacheHelper = processCacheHelper;
     }
 
     /**
@@ -502,11 +503,8 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
      * @param processDefinition 流程定义
      */
     private void startApprovalProcess(ProcessInstance processInstance, ProcessDefinition processDefinition) {
-        List<ProcessNode> processNodes = processNodeMapper.selectList(
-                new LambdaQueryWrapper<ProcessNode>()
-                        .eq(ProcessNode::getDefinitionId, processDefinition.getId())
-                        .orderByAsc(ProcessNode::getNodeOrder)
-        );
+        // 节点列表为读多写少数据，走 cache-aside；缓存按 node_order 升序返回
+        List<ProcessNode> processNodes = processCacheHelper.getNodesByDefinitionId(processDefinition.getId());
 
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> env;

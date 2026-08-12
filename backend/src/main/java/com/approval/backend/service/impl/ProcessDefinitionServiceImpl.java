@@ -2,6 +2,7 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.common.ProcessCacheHelper;
 import com.approval.backend.dto.request.CreateProcessNodeRequest;
 import com.approval.backend.dto.request.CreateProcessRequest;
 import com.approval.backend.dto.response.ProcessDefinitionResponse;
@@ -38,12 +39,14 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     private final ProcessNodeMapper processNodeMapper;
     private final RoleMapper roleMapper;
     private final ProcessInstanceMapper processInstanceMapper;
+    private final ProcessCacheHelper processCacheHelper;
 
-    public ProcessDefinitionServiceImpl(ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, RoleMapper roleMapper, ProcessInstanceMapper processInstanceMapper) {
+    public ProcessDefinitionServiceImpl(ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, RoleMapper roleMapper, ProcessInstanceMapper processInstanceMapper, ProcessCacheHelper processCacheHelper) {
         this.processDefinitionMapper = processDefinitionMapper;
         this.processNodeMapper = processNodeMapper;
         this.roleMapper = roleMapper;
         this.processInstanceMapper = processInstanceMapper;
+        this.processCacheHelper = processCacheHelper;
     }
 
     /**
@@ -90,16 +93,12 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
      */
     @Override
     public ProcessDefinitionDetailResponse getProcessDefinitionDetail(Long id) {
-        ProcessDefinition processDefinition = processDefinitionMapper.selectById(id);
+        ProcessDefinition processDefinition = processCacheHelper.getProcessDefinition(id);
         if (processDefinition == null) {
             throw new BusinessException(400, "流程不存在");
         }
 
-        LambdaQueryWrapper<ProcessNode> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ProcessNode::getDefinitionId, id);
-        wrapper.orderByAsc(ProcessNode::getNodeOrder);
-
-        List<ProcessNode> processNodes = processNodeMapper.selectList(wrapper);
+        List<ProcessNode> processNodes = processCacheHelper.getNodesByDefinitionId(id);
 
         List<ProcessNodeResponse> processNodeResponses = processNodes.stream()
                 .map(this::convertToProcessNodeResponse)
@@ -235,6 +234,9 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             processNodeMapper.insert(processNode);
         }
 
+        // 流程定义与节点均被修改，失效相关缓存（节点采用全量替换，旧缓存已不适用）
+        processCacheHelper.evictDefinition(id);
+
         ProcessDefinition updatedProcessDefinition = processDefinitionMapper.selectById(id);
 
         return convertToProcessDefinitionResponse(updatedProcessDefinition);
@@ -257,6 +259,9 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 .eq(ProcessDefinition::getId, id)
                 .set(ProcessDefinition::getStatus, 1)
         );
+
+        // 状态变更后失效缓存，避免读到旧的 status 值
+        processCacheHelper.evictDefinition(id);
     }
 
     /**
@@ -275,6 +280,9 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 .eq(ProcessDefinition::getId, id)
                 .set(ProcessDefinition::getStatus, 0)
         );
+
+        // 状态变更后失效缓存，避免读到旧的 status 值
+        processCacheHelper.evictDefinition(id);
     }
 
     /**

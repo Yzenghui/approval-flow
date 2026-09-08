@@ -18,6 +18,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -208,6 +209,7 @@ public class UserServiceImpl implements UserService {
                 .set(User::getEmail, updateUserRequest.getEmail())
                 .set(User::getRoleId, newRoleId)
                 .set(User::getStatus, updateUserRequest.getStatus())
+                .set(User::getUpdateTime, LocalDateTime.now())
         );
 
         if (oldStatus == 1 && updateUserRequest.getStatus() == 0) {
@@ -231,6 +233,7 @@ public class UserServiceImpl implements UserService {
         userMapper.update(null, new LambdaUpdateWrapper<User>()
                 .eq(User::getId, id)
                 .set(User::getPassword, BCrypt.hashpw(resetPasswordRequest.getPassword(), BCrypt.gensalt()))
+                .set(User::getUpdateTime, LocalDateTime.now())
         );
     }
 
@@ -248,7 +251,10 @@ public class UserServiceImpl implements UserService {
         }
 
         if (updateManagerRequest.getManagerId() == null) {
-            LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<User>().eq(User::getId, id).set(User::getManagerId, null);
+            LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<User>()
+                    .eq(User::getId, id)
+                    .set(User::getManagerId, null)
+                    .set(User::getUpdateTime, LocalDateTime.now());
             userMapper.update(null, wrapper);
             return;
         }
@@ -273,6 +279,7 @@ public class UserServiceImpl implements UserService {
         userMapper.update(null, new LambdaUpdateWrapper<User>()
                 .eq(User::getId, id)
                 .set(User::getManagerId, updateManagerRequest.getManagerId())
+                .set(User::getUpdateTime, LocalDateTime.now())
         );
     }
 
@@ -323,7 +330,10 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(400, "邮箱已存在");
         }
 
-        userMapper.update(null, new LambdaUpdateWrapper<User>().eq(User::getId, id).set(User::getEmail, updateProfileRequest.getEmail()));
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, id)
+                .set(User::getEmail, updateProfileRequest.getEmail())
+                .set(User::getUpdateTime, LocalDateTime.now()));
     }
 
     /**
@@ -350,6 +360,7 @@ public class UserServiceImpl implements UserService {
         userMapper.update(null, new LambdaUpdateWrapper<User>()
                 .eq(User::getId, id)
                 .set(User::getPassword, BCrypt.hashpw(updatePasswordRequest.getNewPassword(), BCrypt.gensalt()))
+                .set(User::getUpdateTime, LocalDateTime.now())
         );
     }
 }

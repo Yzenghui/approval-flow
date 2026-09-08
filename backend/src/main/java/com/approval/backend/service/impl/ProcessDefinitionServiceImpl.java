@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -225,6 +226,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 .set(ProcessDefinition::getRoleCode, createProcessRequest.getRoleCode())
                 .set(ProcessDefinition::getVersion, existingDefinition.getVersion() + 1)
                 .set(ProcessDefinition::getFormSchema, createProcessRequest.getFormSchema())
+                .set(ProcessDefinition::getUpdateTime, LocalDateTime.now())
         );
 
         processNodeMapper.delete(new LambdaQueryWrapper<ProcessNode>()
@@ -258,6 +260,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinitionMapper.update(null, new LambdaUpdateWrapper<ProcessDefinition>()
                 .eq(ProcessDefinition::getId, id)
                 .set(ProcessDefinition::getStatus, 1)
+                .set(ProcessDefinition::getUpdateTime, LocalDateTime.now())
         );
 
         // 状态变更后失效缓存，避免读到旧的 status 值
@@ -279,6 +282,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinitionMapper.update(null, new LambdaUpdateWrapper<ProcessDefinition>()
                 .eq(ProcessDefinition::getId, id)
                 .set(ProcessDefinition::getStatus, 0)
+                .set(ProcessDefinition::getUpdateTime, LocalDateTime.now())
         );
 
         // 状态变更后失效缓存，避免读到旧的 status 值

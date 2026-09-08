@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -222,6 +223,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
                 .eq(ProcessInstance::getId, id)
                 .set(ProcessInstance::getFormData, formData)
+                .set(ProcessInstance::getUpdateTime, LocalDateTime.now())
         );
     }
 
@@ -258,6 +260,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
                 .eq(ProcessInstance::getId, id)
                 .set(ProcessInstance::getStatus, 1)
+                .set(ProcessInstance::getUpdateTime, LocalDateTime.now())
         );
 
         startApprovalProcess(existingDraft, existingProcess);
@@ -297,12 +300,14 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
                 .eq(ProcessInstance::getId, id)
                 .set(ProcessInstance::getStatus, 4)
+                .set(ProcessInstance::getUpdateTime, LocalDateTime.now())
         );
 
         taskMapper.update(null, new LambdaUpdateWrapper<Task>()
                 .eq(Task::getInstanceId, id)
                 .eq(Task::getStatus, 0)
                 .set(Task::getStatus, 2)
+                .set(Task::getUpdateTime, LocalDateTime.now())
         );
 
         ApprovalRecord record = new ApprovalRecord();
@@ -351,6 +356,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .set(ProcessInstance::getFormData, formData)
                 .set(ProcessInstance::getSubmitCount, existingInstance.getSubmitCount() + 1)
                 .set(ProcessInstance::getStatus, 1)
+                .set(ProcessInstance::getUpdateTime, LocalDateTime.now())
         );
 
         ProcessInstance updatedInstance = processInstanceMapper.selectById(id);

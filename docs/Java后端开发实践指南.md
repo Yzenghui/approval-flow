@@ -387,7 +387,7 @@ public class ImsApplication {
 >   • **创建时机**：由 Bean 自身的**作用域**决定  
 >
 >         单例（默认）：容器启动时初始化（`@Lazy` 标记则延迟至首次被注入时）  
->                                                                                                 
+>                                                                                                       
 >         原型（`@Scope("prototype")`）：每次从容器获取时（注入或 `getBean()`）新建实例  
 >   • **创建机制**：Spring 采用 **"链式创建"**（**通用机制，与作用域无关**）  
 >     创建任意 Bean 时，均先递归创建其所有声明的依赖（遵循**各依赖自身的作用域规则**），并将这些**完整实例**传入目标 Bean 。
@@ -434,20 +434,20 @@ public class ImsApplication {
 >   @Service
 >   public class OrderService {
 >       private final PaymentService paymentService;
->                                 
+>                                   
 >       // 单构造器：参数列表 = 依赖声明，@Autowired 可省略
 >       public OrderService(PaymentService paymentService) {
 >           this.paymentService = paymentService; // 参数已是容器注入完成的 Bean 实例
 >       }
 >   }
->                                 
+>                                   
 >   @RestController
 >   public class OrderController {
 >       private final OrderService orderService;
 >       public OrderController(OrderService orderService) { // OrderService 作为完整实例传入
 >           this.orderService = orderService;
 >       }
->                                 
+>                                   
 >       @PostMapping("/orders")
 >       public String createOrder() {
 >           orderService.process();
@@ -1339,7 +1339,14 @@ MyBatis-Plus 的自动填充遵循 **“非 null 不覆盖”** 原则：
 
 因此，想要自动填充生效，**不要手动给自动填充字段赋值**（保持 `null`）。
 
->  若更新时字段值实际未发生变化，MyBatis-Plus 会跳过 `UPDATE` SQL 的执行，自动填充也不会触发。
+**关键前提 —— 自动填充必须有一个“载体实体”**：
+
+自动填充的本质是“把时间先写进 Java 实体对象，再由 MP 将实体渲染成 SQL 的 `SET update_time = ...`”。因此只有第一个参数**传了非 null 实体**的调用才会触发，如 `insert(实体)`、`updateById(实体)`、`update(实体, wrapper)`。参数处理器在 Map 里解析到 `et = null`（`update(null, wrapper)`）时会直接跳过 `updateFill()`，自动填充形同虚设。
+
+> **注意**：
+>
+> 1. **只要传了非 null 实体，自动填充就会触发**：即便所改字段值与库中相同，`updateFill` 仍会执行并写入 `now()`；“值未变则不刷新”只影响依赖数据库 `ON UPDATE CURRENT_TIMESTAMP` 的兜底路径。
+> 2. **建议保留 DB 兜底**：表定义保留 `ON UPDATE CURRENT_TIMESTAMP`，以覆盖手工 SQL、订正脚本等绕过 ORM 的写入，防止某处漏写时间后时间戳停更。
 
 ```java
 // 错误：先查询再修改，updateTime 已有旧值，自动填充不生效
@@ -1353,10 +1360,12 @@ user.setId(id);
 user.setEmail("new@email.com");
 userMapper.updateById(user);  // updateTime 为 null，触发自动填充
 
-// 也正确：使用 UpdateWrapper，无实体，自动填充生效
+// update(null, wrapper) 传的是 null 实体，自动填充不生效
+// 想刷新 update_time，必须在 wrapper 里显式 set：
 userMapper.update(null, new LambdaUpdateWrapper<User>()
     .eq(User::getId, id)
-    .set(User::getEmail, "new@email.com"));
+    .set(User::getEmail, "new@email.com")
+    .set(User::getUpdateTime, LocalDateTime.now()));
 ```
 
 ------
@@ -1413,7 +1422,7 @@ public interface UserMapper extends BaseMapper<User> {
 | **条件构造器** | 始终用 `LambdaQueryWrapper`                             | 禁止用字符串 `QueryWrapper` 写字段名 |
 | **分页**       | 配合 `Page` 对象 + 分页插件                             | 不要自己手写 `LIMIT` 后再查 `COUNT`  |
 | **逻辑删除**   | 全局配置 + `@TableLogic`                                | 物理删除必须经过代码审查             |
-| **自动填充**   | 统一使用 `MetaObjectHandler`                            | 不在业务代码中手动设置时间           |
+| **自动填充**   | 统一使用 `MetaObjectHandler`                            | 手动 new 的实体保持时间字段 `null`；`update(null, wrapper)` 时在 wrapper 显式 `.set()` 时间           |
 | **SQL 日志**   | 开发环境开启，生产关闭                                  | 生产开启会打印全部数据行             |
 | **性能**       | 大批量操作使用 `insertBatchSomeColumn` 或 `updateBatch` | 避免循环调用 `insert`/`update`       |
 

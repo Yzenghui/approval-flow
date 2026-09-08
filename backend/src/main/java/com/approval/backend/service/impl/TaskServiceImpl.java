@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +143,8 @@ public class TaskServiceImpl implements TaskService {
             int updated = taskMapper.update(null, new LambdaUpdateWrapper<Task>()
                     .eq(Task::getId, taskId)
                     .eq(Task::getStatus, 0)
-                    .set(Task::getStatus, 1));
+                    .set(Task::getStatus, 1)
+                    .set(Task::getUpdateTime, LocalDateTime.now()));
             if (updated == 0) {
                 throw new BusinessException("任务正在处理中，请勿重复提交");
             }
@@ -151,7 +153,8 @@ public class TaskServiceImpl implements TaskService {
             if (!hasNext) {
                 processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
                         .eq(ProcessInstance::getId, task.getInstanceId())
-                        .set(ProcessInstance::getStatus, 2));
+                        .set(ProcessInstance::getStatus, 2)
+                        .set(ProcessInstance::getUpdateTime, LocalDateTime.now()));
             }
 
             ApprovalRecord approvalRecord = new ApprovalRecord();
@@ -198,14 +201,16 @@ public class TaskServiceImpl implements TaskService {
             int updated = taskMapper.update(null, new LambdaUpdateWrapper<Task>()
                     .eq(Task::getId, taskId)
                     .eq(Task::getStatus, 0)
-                    .set(Task::getStatus, 1));
+                    .set(Task::getStatus, 1)
+                    .set(Task::getUpdateTime, LocalDateTime.now()));
             if (updated == 0) {
                 throw new BusinessException("任务正在处理中，请勿重复提交");
             }
 
             processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
                     .eq(ProcessInstance::getId, task.getInstanceId())
-                    .set(ProcessInstance::getStatus, 3));
+                    .set(ProcessInstance::getStatus, 3)
+                    .set(ProcessInstance::getUpdateTime, LocalDateTime.now()));
 
             ApprovalRecord approvalRecord = new ApprovalRecord();
             approvalRecord.setInstanceId(task.getInstanceId());

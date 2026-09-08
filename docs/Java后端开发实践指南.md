@@ -376,6 +376,7 @@ public class ImsApplication {
 | `@Configuration`  | 配置类，替代 XML 配置，内部方法配合 `@Bean` 向容器注册组件   |
 | `@Bean`           | 在 `@Configuration` 类中，将方法返回值注册为 Spring 容器管理的 Bean |
 | `@ComponentScan`  | 指定扫描包路径，自动发现并注册带 `@Component` 等注解的类为 Bean |
+| `@EnableConfigurationProperties` | 在 `@Configuration` 类上声明，将 `@ConfigurationProperties` 标注的属性类显式注册为 Bean（属性类无组件扫描注解，需它激活配置绑定） |
 | `@DependsOn`      | 强制控制 Bean 初始化顺序，确保指定 Bean 在当前 Bean 之前创建 |
 
 > **核心说明**  
@@ -501,7 +502,7 @@ public class ImsApplication {
 | 注解                       | 作用                                                         |
 | -------------------------- | ------------------------------------------------------------ |
 | `@SpringBootApplication`   | 启动类核心注解，三合一：`@Configuration`（声明配置类） + `@EnableAutoConfiguration`（启用自动装配） + `@ComponentScan`（扫描组件，默认当前包及子包） |
-| `@ConfigurationProperties` | 将 YAML/properties 配置按前缀绑定到 Java 对象，实现类型安全、支持嵌套结构和默认值，需配合 setter 或 Lombok 使用 |
+| `@ConfigurationProperties` | 将 YAML/properties 配置按前缀绑定到 Java 对象，实现类型安全、支持嵌套结构和默认值，需配合 setter 或 Lombok 使用（配合 `@EnableConfigurationProperties` 注册为 Bean 后生效） |
 | `@PropertySource`          | 加载额外的 `.properties` 配置文件（**原生不支持 `.yml`/`.yaml`**） |
 | `@Profile`                 | 环境隔离，仅当激活的 Profile 与注解值匹配时才注册该组件      |
 

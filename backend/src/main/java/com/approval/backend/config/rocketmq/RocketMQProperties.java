@@ -1,4 +1,4 @@
-package com.approval.backend.config;
+package com.approval.backend.config.rocketmq;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

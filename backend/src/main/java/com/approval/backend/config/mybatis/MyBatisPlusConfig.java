@@ -1,4 +1,4 @@
-package com.approval.backend.config;
+package com.approval.backend.config.mybatis;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;

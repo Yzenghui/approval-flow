@@ -1,4 +1,4 @@
-package com.approval.backend.constant;
+package com.approval.backend.config.rocketmq;
 
 /**
  * RocketMQ 相关常量

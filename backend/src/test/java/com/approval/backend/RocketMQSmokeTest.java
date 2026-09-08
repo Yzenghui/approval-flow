@@ -1,6 +1,6 @@
 package com.approval.backend;
 
-import com.approval.backend.constant.RocketMQConstant;
+import com.approval.backend.config.rocketmq.RocketMQConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.client.producer.SendResult;

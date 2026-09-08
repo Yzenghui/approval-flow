@@ -2,7 +2,7 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
-import com.approval.backend.common.ProcessCacheHelper;
+import com.approval.backend.service.cache.ProcessCacheHelper;
 import com.approval.backend.common.RedisLockUtil;
 import com.approval.backend.dto.response.CompletedTaskResponse;
 import com.approval.backend.dto.response.PendingTaskResponse;

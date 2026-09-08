@@ -1,4 +1,4 @@
-package com.approval.backend.config;
+package com.approval.backend.config.satoken;
 
 import cn.dev33.satoken.stp.StpInterface;
 import com.approval.backend.mapper.RoleMapper;

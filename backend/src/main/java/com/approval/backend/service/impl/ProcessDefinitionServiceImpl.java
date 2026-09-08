@@ -2,7 +2,7 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
-import com.approval.backend.common.ProcessCacheHelper;
+import com.approval.backend.service.cache.ProcessCacheHelper;
 import com.approval.backend.dto.request.CreateProcessNodeRequest;
 import com.approval.backend.dto.request.CreateProcessRequest;
 import com.approval.backend.dto.response.ProcessDefinitionResponse;

@@ -1,4 +1,4 @@
-package com.approval.backend.config;
+package com.approval.backend.config.satoken;
 
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import org.springframework.context.annotation.Configuration;

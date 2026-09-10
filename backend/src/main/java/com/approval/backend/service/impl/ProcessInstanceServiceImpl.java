@@ -39,7 +39,13 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     private final ApprovalRecordMapper approvalRecordMapper;
     private final ProcessCacheHelper processCacheHelper;
 
-    public ProcessInstanceServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper, ProcessCacheHelper processCacheHelper) {
+    /**
+     * 复用 Spring 容器里已配置好的 ObjectMapper（JavaTimeModule、未知字段容错等）。
+     * 相比在方法里 new 一个裸 mapper，既省掉每次调用的构造开销，也保证全局序列化行为一致。
+     */
+    private final ObjectMapper objectMapper;
+
+    public ProcessInstanceServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper, ProcessCacheHelper processCacheHelper, ObjectMapper objectMapper) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.processDefinitionMapper = processDefinitionMapper;
@@ -47,6 +53,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         this.taskMapper = taskMapper;
         this.approvalRecordMapper = approvalRecordMapper;
         this.processCacheHelper = processCacheHelper;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -512,7 +519,6 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         // 节点列表为读多写少数据，走 cache-aside；缓存按 node_order 升序返回
         List<ProcessNode> processNodes = processCacheHelper.getNodesByDefinitionId(processDefinition.getId());
 
-        ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> env;
         try {
             env = objectMapper.readValue(processInstance.getFormData(), new TypeReference<>() {

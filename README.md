@@ -33,7 +33,7 @@
 
 ## 相关文档
 
-- [《审批流组件设计文档》](docs/审批流组件设计文档.md) - 系统架构、ER图、状态机、接口规范、核心难点解析
+- [《审批流组件设计文档》](docs/审批流组件设计文档.md) - 系统架构、数据库设计、状态机、接口规范、核心难点解析
 - [《Java后端开发实践指南》](docs/Java后端开发实践指南.md) - Spring Boot / MyBatis-Plus / Sa-Token / Aviator 实战总结
 - [《Vue前端开发笔记》](docs/Vue前端开发笔记.md) - Vue 2→3 迁移、Composition API、工程化实践
 

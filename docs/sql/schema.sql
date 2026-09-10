@@ -140,6 +140,26 @@ CREATE TABLE `approval_record` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审批记录表';
 
 -- ======================================================
+-- 8. 通知表（notification）- 引用 process_instance、task、user
+-- ======================================================
+CREATE TABLE `notification` (
+    `id`           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `instance_id`  BIGINT       NOT NULL COMMENT '关联 process_instance 表主键',
+    `task_id`      BIGINT       NOT NULL COMMENT '关联 task 表主键（触发该通知的任务），用于消费幂等',
+    `recipient_id` BIGINT       NOT NULL COMMENT '收件人ID，关联 user 表主键',
+    `type`         TINYINT      NOT NULL COMMENT '通知类型：0驳回 1待办 2通过',
+    `content`      VARCHAR(500) NOT NULL COMMENT '通知内容',
+    `is_read`      TINYINT      NOT NULL DEFAULT 0 COMMENT '0未读 1已读',
+    `create_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_task_type` (`task_id`, `type`),
+    KEY `idx_recipient_read` (`recipient_id`, `is_read`),
+    CONSTRAINT `fk_notification_instance` FOREIGN KEY (`instance_id`) REFERENCES `process_instance` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_notification_task` FOREIGN KEY (`task_id`) REFERENCES `task` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_notification_recipient` FOREIGN KEY (`recipient_id`) REFERENCES `user` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知表';
+
+-- ======================================================
 -- 初始化角色数据
 -- ======================================================
 INSERT INTO `role` (`id`, `code`, `name`, `level`, `status`, `create_time`, `update_time`) VALUES

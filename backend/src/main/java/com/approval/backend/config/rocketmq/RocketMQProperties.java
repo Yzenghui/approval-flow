@@ -26,4 +26,10 @@ public class RocketMQProperties {
 
     /** 同步发送超时时间（毫秒），默认 3000 */
     private int sendMsgTimeout = 3000;
+
+    /** 单次消费回调最多处理多少条消息，默认 1 */
+    private int consumeMessageBatchMaxSize = 1;
+
+    /** 消息最大重试次数，默认 5 */
+    private int maxReconsumeTimes = 5;
 }

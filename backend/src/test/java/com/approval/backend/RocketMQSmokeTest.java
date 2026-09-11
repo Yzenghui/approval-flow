@@ -18,11 +18,14 @@ import java.nio.charset.StandardCharsets;
  * 生产者发一条、消费者收一条。
  * </p>
  * <p>
- * 运行方式：在 IDEA 中直接运行本测试方法，观察控制台日志
- * 应依次出现两行：
- * 1. {@code 测试消息发送成功: ... SEND_OK}
- * 2. {@code [RocketMQ 消费] topic=approval-event ... body=hello-rocketmq}
+ * 运行方式：在 IDEA 中直接运行本测试方法，观察控制台日志应依次出现两行：
  * </p>
+ * <ol>
+ *   <li>{@code 测试消息发送成功: SEND_OK} —— 消息已投递到 Broker</li>
+ *   <li>{@code 非审批事件消息，已跳过: msgId=..., body=hello-rocketmq}
+ *       —— 消费端确实收到了消息，但 body 不是审批事件的 JSON，
+ *       按约定跳过并 ack。本测试只验证收发链路连通，不涉及落库</li>
+ * </ol>
  */
 @Slf4j
 @SpringBootTest

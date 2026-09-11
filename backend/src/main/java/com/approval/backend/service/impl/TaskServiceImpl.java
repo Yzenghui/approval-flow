@@ -4,6 +4,7 @@ import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
 import com.approval.backend.service.cache.ProcessCacheHelper;
 import com.approval.backend.common.RedisLockUtil;
+import com.approval.backend.dto.message.ApprovalEventMessage;
 import com.approval.backend.dto.response.CompletedTaskResponse;
 import com.approval.backend.dto.response.PendingTaskResponse;
 import com.approval.backend.entity.*;
@@ -16,6 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.googlecode.aviator.AviatorEvaluator;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -38,8 +40,15 @@ public class TaskServiceImpl implements TaskService {
     private final ApprovalRecordMapper approvalRecordMapper;
     private final RedisLockUtil redisLockUtil;
     private final ProcessCacheHelper processCacheHelper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
-    public TaskServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper, RedisLockUtil redisLockUtil, ProcessCacheHelper processCacheHelper) {
+    /**
+     * 复用 Spring 容器里已配置好的 ObjectMapper（JavaTimeModule、未知字段容错等）。
+     * 相比在方法里 new 一个裸 mapper，既省掉每次调用的构造开销，也保证全局序列化行为一致。
+     */
+    private final ObjectMapper objectMapper;
+
+    public TaskServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper, RedisLockUtil redisLockUtil, ProcessCacheHelper processCacheHelper, ApplicationEventPublisher applicationEventPublisher, ObjectMapper objectMapper) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.processNodeMapper = processNodeMapper;
@@ -48,6 +57,8 @@ public class TaskServiceImpl implements TaskService {
         this.approvalRecordMapper = approvalRecordMapper;
         this.redisLockUtil = redisLockUtil;
         this.processCacheHelper = processCacheHelper;
+        this.applicationEventPublisher = applicationEventPublisher;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -219,9 +230,41 @@ public class TaskServiceImpl implements TaskService {
             approvalRecord.setAction(2);
             approvalRecord.setRemark(remark);
             approvalRecordMapper.insert(approvalRecord);
+
+            publishRejectEvent(task, remark);
         } finally {
             redisLockUtil.unlock(lockKey, lockValue);
         }
+    }
+
+    /**
+     * 发布"申请被驳回"通知事件
+     * <p>
+     * 这里只是把事件登记到 Spring 的事件总线上，并不会立刻发 MQ：
+     * 真正的投递由 {@code ApprovalEventProducer} 在事务提交后完成，
+     * 避免出现"事务已回滚、通知却已经发出去"的情况。
+     * </p>
+     *
+     * @param task   被驳回的任务
+     * @param remark 审批意见
+     */
+    private void publishRejectEvent(Task task, String remark) {
+        ProcessInstance processInstance = processInstanceMapper.selectById(task.getInstanceId());
+
+        StringBuilder content = new StringBuilder()
+                .append("您的【").append(processInstance.getDefinitionName()).append("】申请已被驳回");
+        if (StringUtils.hasText(remark)) {
+            content.append("，审批意见：").append(remark);
+        }
+
+        ApprovalEventMessage eventMessage = new ApprovalEventMessage();
+        eventMessage.setInstanceId(task.getInstanceId());
+        eventMessage.setTaskId(task.getId());
+        eventMessage.setType(0);
+        eventMessage.setRecipientId(processInstance.getInitiatorId());
+        eventMessage.setContent(content.toString());
+
+        applicationEventPublisher.publishEvent(eventMessage);
     }
 
     /**
@@ -324,7 +367,6 @@ public class TaskServiceImpl implements TaskService {
             return false;
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> env;
         try {
             env = objectMapper.readValue(processInstance.getFormData(), new TypeReference<>() {

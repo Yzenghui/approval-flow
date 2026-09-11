@@ -1,19 +1,13 @@
 package com.approval.backend.config.rocketmq;
 
+import com.approval.backend.mq.ApprovalEventConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
-import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
-import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
-import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
-import org.apache.rocketmq.common.message.MessageExt;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 /**
  * RocketMQ 配置类
@@ -50,32 +44,24 @@ public class RocketMQConfig {
     }
 
     /**
-     * 消费者：监听审批事件主题，实现"发一条收一条"的链路验证
+     * 消费者：监听审批事件主题，把审批事件落库为通知
+     * <p>
+     * 本方法只负责消费者的创建、订阅与生命周期管理；
+     * 真正的消费逻辑（解析消息、写通知表、幂等处理）在
+     * {@link ApprovalEventConsumer} 中，便于单独阅读与测试。
+     * </p>
      */
     @Bean(destroyMethod = "shutdown")
-    public DefaultMQPushConsumer defaultMQPushConsumer(RocketMQProperties props) throws MQClientException {
+    public DefaultMQPushConsumer defaultMQPushConsumer(RocketMQProperties props,
+                                                       ApprovalEventConsumer approvalEventConsumer) throws MQClientException {
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(props.getConsumerGroup());
         consumer.setNamesrvAddr(props.getNameServer());
         // 订阅审批事件主题，Tag 用 "*" 表示不过滤，收到所有事件类型
         consumer.subscribe(RocketMQConstant.APPROVAL_EVENT_TOPIC, "*");
+        consumer.registerMessageListener(approvalEventConsumer);
 
-        // MessageListenerConcurrently：并发消费监听器
-        // 返回 CONSUME_SUCCESS 等价于"手动 ack"，告诉 Broker 这条消息处理成功了
-        // 如果返回 RECONSUME_LATER，Broker 会按重试策略再次投递
-        consumer.registerMessageListener(new MessageListenerConcurrently() {
-            @Override
-            public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs,
-                                                            ConsumeConcurrentlyContext context) {
-                for (MessageExt msg : msgs) {
-                    log.info("[RocketMQ 消费] topic={}, msgId={}, tags={}, body={}",
-                            msg.getTopic(),
-                            msg.getMsgId(),
-                            msg.getTags(),
-                            new String(msg.getBody(), StandardCharsets.UTF_8));
-                }
-                return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
-            }
-        });
+        consumer.setConsumeMessageBatchMaxSize(props.getConsumeMessageBatchMaxSize());
+        consumer.setMaxReconsumeTimes(props.getMaxReconsumeTimes());
 
         consumer.start();
         log.info("RocketMQ Consumer 启动成功, 监听 topic={}", RocketMQConstant.APPROVAL_EVENT_TOPIC);

@@ -387,7 +387,7 @@ public class ImsApplication {
 >   • **创建时机**：由 Bean 自身的**作用域**决定  
 >
 >         单例（默认）：容器启动时初始化（`@Lazy` 标记则延迟至首次被注入时）  
->                                                                                                       
+>                                                                                                             
 >         原型（`@Scope("prototype")`）：每次从容器获取时（注入或 `getBean()`）新建实例  
 >   • **创建机制**：Spring 采用 **"链式创建"**（**通用机制，与作用域无关**）  
 >     创建任意 Bean 时，均先递归创建其所有声明的依赖（遵循**各依赖自身的作用域规则**），并将这些**完整实例**传入目标 Bean 。
@@ -434,20 +434,20 @@ public class ImsApplication {
 >   @Service
 >   public class OrderService {
 >       private final PaymentService paymentService;
->                                   
+>                                     
 >       // 单构造器：参数列表 = 依赖声明，@Autowired 可省略
 >       public OrderService(PaymentService paymentService) {
 >           this.paymentService = paymentService; // 参数已是容器注入完成的 Bean 实例
 >       }
 >   }
->                                   
+>                                     
 >   @RestController
 >   public class OrderController {
 >       private final OrderService orderService;
 >       public OrderController(OrderService orderService) { // OrderService 作为完整实例传入
 >           this.orderService = orderService;
 >       }
->                                   
+>                                     
 >       @PostMapping("/orders")
 >       public String createOrder() {
 >           orderService.process();
@@ -1942,9 +1942,38 @@ public class OrderService {
 
 ---
 
-#### 事件的订阅与分发机制
+#### 事件的发布、订阅与分发机制
 
 `publishEvent` 与监听器之间并没有显式的绑定关系，是否被触发完全由**类型匹配**决定。理解这套规则，才能解释监听器为什么会被调用，以及为什么有时"发了却没人收"。
+
+##### 发布入口：`ApplicationEventPublisher`
+
+事件发布的唯一入口是 `ApplicationEventPublisher#publishEvent(Object event)`，这个接口不需要我们注册任何 Bean，容器启动时会把 **`ApplicationContext` 自身**注册为可注入的 `ApplicationEventPublisher`（`ApplicationContext` 接口本身就继承了 `ApplicationEventPublisher`），因此直接注入就能用：
+
+```java
+@Service
+public class TaskServiceImpl {
+
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    // 构造注入：拿到的是容器自身的发布能力，而非某个具体业务 Bean
+    public TaskServiceImpl(ApplicationEventPublisher applicationEventPublisher) {
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void rejectTask(Long taskId, String remark, Long userId) {
+        // ... 更新任务状态、写入审批记录 ...
+        // 事务内只"登记"事件，真正的投递交给事务提交后的监听器
+        applicationEventPublisher.publishEvent(eventMessage);
+    }
+}
+```
+
+- **只有一个入口方法**：`publishEvent(Object event)`，返回 `void`，参数里**没有"主题/目的地"**——投给谁完全由监听器的参数类型决定（见下）
+- **事件不必继承 `ApplicationEvent`**：Spring 4.2 起支持任意 POJO 充当事件，项目中的 `ApprovalEventMessage` 就是普通 `@Data` 类，它同时兼作 MQ 消息体，一个对象承担两个角色
+- **同步调用**：`publishEvent` 会阻塞到所有匹配的监听器执行完成（`@TransactionalEventListener` 除外，它被登记进事务同步器，延后到事务阶段才执行）
+- **不会抛"无人订阅"异常**：没有匹配的监听器时静默返回，所以"调用没报错"不能作为"通知已发出"的证据
 
 ##### 隐式订阅：类型即路由
 
@@ -1973,7 +2002,7 @@ public class OrderEventListener {
 `publishEvent` 本身不做分发，它把事件交给 `ApplicationEventMulticaster`（默认实现 `SimpleApplicationEventMulticaster`），由后者找出所有匹配的监听器并逐个调用：
 
 ```java
-publisher.publishEvent(new OrderCreatedEvent(order));
+applicationEventPublisher.publishEvent(new OrderCreatedEvent(order));
 //   ↓  ApplicationEventMulticaster
 //   ↓  遍历容器内全部监听器，逐个判断：
 //        listenerParameterType.isAssignableFrom(event.getClass())
@@ -2016,12 +2045,12 @@ public class UserRegisteredEvent {
 @Service
 public class UserService {
     @Autowired
-    private ApplicationEventPublisher publisher;
+    private ApplicationEventPublisher applicationEventPublisher;
     
     @Transactional(rollbackFor = Exception.class)
     public void register(User user) {
         userMapper.insert(user);
-        publisher.publishEvent(new UserRegisteredEvent(user));
+        applicationEventPublisher.publishEvent(new UserRegisteredEvent(user));
     }
 }
 
@@ -2046,6 +2075,54 @@ public class CacheService {
 
 > `@TransactionalEventListener` 默认在 `AFTER_COMMIT` 阶段触发，也可通过 `phase` 指定其他阶段（如 `AFTER_ROLLBACK`、`BEFORE_COMMIT`）。
 
+> **注意**：`@TransactionalEventListener` 默认 `fallbackExecution = false`，意味着**发布事件时若没有活动事务，该监听器会被直接跳过**。业务方法漏加 `@Transactional` 时，`publishEvent` 依然不报错，通知却永远发不出去——这类问题排查起来相当隐蔽。确有需要时可显式设为 `true`，让它退化为普通监听器立即执行。
+
+##### 项目实战：驳回通知的完整触发链路
+
+"申请被驳回后通知发起人"这条链路，用最少的代码展示了 `applicationEventPublisher.publishEvent` 与事务的配合方式：
+
+```java
+// ① 业务侧：事务内只登记事件（TaskServiceImpl）
+@Override
+@Transactional(rollbackFor = Exception.class)
+public void rejectTask(Long taskId, String remark, Long userId) {
+    // ... 更新任务状态、写入审批记录 ...
+    publishRejectEvent(task, remark);
+}
+
+private void publishRejectEvent(Task task, String remark) {
+    ProcessInstance processInstance = processInstanceMapper.selectById(task.getInstanceId());
+
+    ApprovalEventMessage eventMessage = new ApprovalEventMessage();
+    eventMessage.setTaskId(task.getId());
+    eventMessage.setType(0);                                      // 0 = 驳回
+    eventMessage.setRecipientId(processInstance.getInitiatorId()); // 收件人 = 流程发起人
+    // 触发通知的入口：交给 Spring 事件总线，而不是直接调用 MQ
+    applicationEventPublisher.publishEvent(eventMessage);
+}
+
+// ② 监听侧：等事务提交后再投递（ApprovalEventProducer）
+@Component
+public class ApprovalEventProducer {
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void sendAfterCommit(ApprovalEventMessage eventMessage) {
+        // 走到这里事务已提交，投递失败也不会回滚审批结果
+        producer.send(buildMessage(eventMessage));
+    }
+}
+```
+
+把链路拆成三段，各段职责边界就清楚了：
+
+| 阶段       | 执行者                  | 动作                                          | 关键点                                  |
+| ---------- | ----------------------- | --------------------------------------------- | --------------------------------------- |
+| 事务内     | `TaskServiceImpl`       | `applicationEventPublisher.publishEvent(...)` | 只登记，不碰 MQ；事务回滚则事件随之作废  |
+| 事务提交后 | `ApprovalEventProducer` | 投递 RocketMQ `approval-event` 主题           | `AFTER_COMMIT` 触发，失败只记日志不外抛  |
+| 消费端     | `ApprovalEventConsumer` | 按 `uk_task_type` 幂等落库                    | 重复消息撞唯一键后忽略                  |
+
+> 这也解释了为什么**不能**在 `rejectTask` 里直接 `producer.send(...)`：一旦后续逻辑抛异常导致事务回滚，消息却已经发出去了，就会出现"通知说已驳回、实际状态没变"的数据不一致。
+
 ---
 
 #### 事务与事件协同的最佳实践
@@ -2058,15 +2135,16 @@ public class CacheService {
 | ---------------------------- | ------------------------ |
 | 数据库 CRUD                  | 发送 HTTP 请求           |
 | 调用同一事务内的其他 DB 操作 | 调用第三方 API           |
-| 发布事件（交给监听器）       | 在事务中执行大量循环逻辑 |
+| `applicationEventPublisher.publishEvent` 登记事件 | 在事务中执行大量循环逻辑 |
 
 ##### 常见误区
 
 | 误区                               | 后果                                         | 正确做法                                                |
 | ---------------------------------- | -------------------------------------------- | ------------------------------------------------------- |
-| 在事务中直接发送 MQ 或调用外部接口 | 事务回滚后消息已发出，出现"通知发了业务没成" | 事务内只 `publishEvent`，投递交给 `AFTER_COMMIT` 监听器 |
+| 在事务中直接发送 MQ 或调用外部接口 | 事务回滚后消息已发出，出现"通知发了业务没成" | 事务内只 `applicationEventPublisher.publishEvent`，投递交给 `AFTER_COMMIT` 监听器 |
 | 在监听器中开启新事务               | 事务边界混乱，失败无法回滚到主事务           | 监听器保持无事务，改由业务方统一编排                    |
 | 认为 `publishEvent` 无异常即已投递 | 无匹配监听器时静默跳过，消息实际未发出       | 确认存在参数类型匹配的监听器                            |
+| 业务方法漏加 `@Transactional`      | 发布时无活动事务，`AFTER_COMMIT` 监听器被跳过，通知静默丢失 | 确保发布事件的方法在事务内，或设置 `fallbackExecution = true` |
 
 ------
 

@@ -1,9 +1,15 @@
 package com.approval.backend.service.impl;
 
+import com.approval.backend.common.BusinessException;
+import com.approval.backend.common.PageResult;
 import com.approval.backend.dto.message.ApprovalEventMessage;
+import com.approval.backend.dto.response.NotificationResponse;
 import com.approval.backend.entity.Notification;
 import com.approval.backend.mapper.NotificationMapper;
 import com.approval.backend.service.NotificationService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -14,6 +20,10 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class NotificationServiceImpl implements NotificationService {
+
+    /** is_read 取值：0未读 1已读 */
+    private static final int UNREAD = 0;
+    private static final int READ = 1;
 
     private final NotificationMapper notificationMapper;
 
@@ -41,7 +51,7 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setRecipientId(eventMessage.getRecipientId());
         notification.setType(eventMessage.getType());
         notification.setContent(eventMessage.getContent());
-        notification.setIsRead(0);
+        notification.setIsRead(UNREAD);
 
         try {
             notificationMapper.insert(notification);
@@ -55,5 +65,100 @@ public class NotificationServiceImpl implements NotificationService {
             log.info("通知已存在，忽略重复消息: taskId={}, type={}",
                     eventMessage.getTaskId(), eventMessage.getType());
         }
+    }
+
+    /**
+     * 分页查询当前用户的通知
+     * <p>
+     * 收件人条件直接写进 SQL，不依赖上层传参正确；
+     * 排序用 create_time + id 双字段，理由见方法内注释。
+     * </p>
+     */
+    @Override
+    public PageResult<NotificationResponse> getNotifications(Integer pageNum, Integer pageSize, Integer type, Boolean onlyUnread, Long userId) {
+        Page<Notification> page = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<Notification> queryWrapper = new LambdaQueryWrapper<Notification>()
+                .eq(Notification::getRecipientId, userId)
+                .eq(type != null, Notification::getType, type)
+                .eq(Boolean.TRUE.equals(onlyUnread), Notification::getIsRead, UNREAD)
+                // create_time 是秒精度，同一秒落库的多条通知时间完全相同，
+                // 仅按它排序时顺序不稳定，翻页会出现漏记录或重复记录，故用 id 兜底
+                .orderByDesc(Notification::getCreateTime)
+                .orderByDesc(Notification::getId);
+        Page<Notification> notificationPage = notificationMapper.selectPage(page, queryWrapper);
+
+        PageResult<NotificationResponse> pageResult = new PageResult<>();
+        pageResult.setTotal(notificationPage.getTotal());
+        pageResult.setRecords(notificationPage.getRecords().stream()
+                .map(NotificationServiceImpl::toResponse)
+                .toList());
+
+        return pageResult;
+    }
+
+    /**
+     * 统计当前用户未读通知数
+     */
+    @Override
+    public Long getUnreadCount(Long userId) {
+        return notificationMapper.selectCount(new LambdaQueryWrapper<Notification>()
+                .eq(Notification::getRecipientId, userId)
+                .eq(Notification::getIsRead, UNREAD));
+    }
+
+    /**
+     * 标记单条通知为已读
+     * <p>
+     * 已读的重复标记幂等放行，不属于当前用户的通知必须报错。
+     * 更新本身天然幂等（重复执行最终都是 is_read = 1），并发标记无需加锁。
+     * </p>
+     *
+     * @param notificationId 通知ID
+     * @param userId         当前用户ID（即收件人）
+     */
+    @Override
+    public void markAsRead(Long notificationId, Long userId) {
+        Notification notification = notificationMapper.selectById(notificationId);
+        // 不存在与不属于当前用户返回同一句话，避免用错误信息探测他人通知是否存在
+        if (notification == null || !userId.equals(notification.getRecipientId())) {
+            throw new BusinessException("通知不存在");
+        }
+        if (Integer.valueOf(READ).equals(notification.getIsRead())) {
+            return;
+        }
+
+        notificationMapper.update(null, new LambdaUpdateWrapper<Notification>()
+                .eq(Notification::getId, notificationId)
+                .eq(Notification::getRecipientId, userId)
+                .set(Notification::getIsRead, READ));
+    }
+
+    /**
+     * 标记当前用户全部通知为已读
+     * <p>
+     * 只带 is_read = 0 条件，避免把已读记录重复更新一遍。
+     * </p>
+     */
+    @Override
+    public void markAllAsRead(Long userId) {
+        notificationMapper.update(null, new LambdaUpdateWrapper<Notification>()
+                .eq(Notification::getRecipientId, userId)
+                .eq(Notification::getIsRead, UNREAD)
+                .set(Notification::getIsRead, READ));
+    }
+
+    /**
+     * 实体转响应对象
+     */
+    private static NotificationResponse toResponse(Notification notification) {
+        NotificationResponse response = new NotificationResponse();
+        response.setId(notification.getId());
+        response.setInstanceId(notification.getInstanceId());
+        response.setTaskId(notification.getTaskId());
+        response.setType(notification.getType());
+        response.setContent(notification.getContent());
+        response.setIsRead(notification.getIsRead());
+        response.setCreateTime(notification.getCreateTime());
+        return response;
     }
 }

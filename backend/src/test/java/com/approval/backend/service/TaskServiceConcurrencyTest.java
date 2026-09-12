@@ -21,6 +21,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * 任务审批的并发集成测试
+ * <p>
+ * 用 5 个线程同时抢同一个任务，验证"Redis 分布式锁 + 数据库条件更新"，最终只放行一个。
+ * 这类并发下的唯一性依赖真实的锁与事务，mock 无法表达，因此必须是集成测试。
+ * </p>
+ */
 @SpringBootTest
 class TaskServiceConcurrencyTest {
 
@@ -37,6 +44,8 @@ class TaskServiceConcurrencyTest {
     private TaskMapper taskMapper;
     @Autowired
     private ApprovalRecordMapper approvalRecordMapper;
+    @Autowired
+    private NotificationMapper notificationMapper;
 
     private Long testDefinitionId;
     private Long testNodeId;
@@ -85,6 +94,12 @@ class TaskServiceConcurrencyTest {
 
     @AfterEach
     void tearDown() {
+        if (testInstanceId != null) {
+            // 通知必须最先删：fk_notification_instance 与 fk_notification_task 都是 RESTRICT
+            notificationMapper.delete(
+                new LambdaQueryWrapper<Notification>()
+                    .eq(Notification::getInstanceId, testInstanceId));
+        }
         if (testTaskId != null) {
             taskMapper.deleteById(testTaskId);
         }

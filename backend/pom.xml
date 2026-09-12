@@ -120,6 +120,15 @@
 					</excludes>
 				</configuration>
 			</plugin>
+
+			<!-- 排除带有 manual 标签的测试，使其在常规 mvn test 中自动跳过 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<excludedGroups>manual</excludedGroups>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

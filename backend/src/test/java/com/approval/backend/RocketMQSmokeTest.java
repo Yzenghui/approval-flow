@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.common.message.Message;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,10 +13,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.nio.charset.StandardCharsets;
 
 /**
- * RocketMQ 环境联通冒烟测试
+ * RocketMQ 环境联通冒烟测试（手工探针，不参与 {@code mvn test}）
  * <p>
  * 目的：验证 Windows 后端代码能连上虚拟机里的 RocketMQ，
  * 生产者发一条、消费者收一条。
+ * </p>
+ * <p>
+ * 此处无断言，判定靠人工看日志，并且依赖真实 Broker 在跑、还要额外等待 15 秒，
+ * 因此打上 {@code @Tag("manual")}，由 surefire 在 {@code mvn test} 时排除，
+ * 需要时在 IDEA 中单独运行即可。
  * </p>
  * <p>
  * 运行方式：在 IDEA 中直接运行本测试方法，观察控制台日志应依次出现两行：
@@ -29,6 +35,7 @@ import java.nio.charset.StandardCharsets;
  */
 @Slf4j
 @SpringBootTest
+@Tag("manual")
 class RocketMQSmokeTest {
 
     @Autowired

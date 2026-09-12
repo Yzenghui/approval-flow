@@ -15,6 +15,14 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * 登录失败次数限制的集成测试
+ * <p>
+ * 限流计数落在 Redis 上，这里要验证的是"第 5 次失败即锁定""登录成功后计数清零"
+ * 这类依赖 Redis 真实 INCR 与 TTL 语义的行为，用 mock 只能验证"调用过 expire"，
+ * 验证不了真实计数，因此必须是集成测试。
+ * </p>
+ */
 @SpringBootTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AuthServiceRateLimitTest {

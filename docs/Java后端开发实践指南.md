@@ -1854,7 +1854,7 @@ public class PerformanceAspect {
 
 ### 3.3 事务管理与事件同步
 
-Spring 事务管理依赖 AOP 代理，`@Transactional` 负责声明事务边界，而 `@TransactionalEventListener` 则将事件机制与事务生命周期绑定。
+Spring 事务管理依赖 AOP 代理，`@Transactional` 负责声明事务边界；事件机制则以**类型匹配**的方式完成发布与订阅，`@TransactionalEventListener` 进一步把监听时机绑定到事务生命周期上。
 
 ---
 
@@ -1880,7 +1880,7 @@ public class ImsApplication {
 
 #### 事务边界声明：`@Transactional`
 
-将 `@Transactional` 标注在 **public 方法** 或 **类** 上，即可为该类中所有 public 方法开启事务。
+将 `@Transactional` 标注在**类**上，可为该类中所有 public 方法开启事务；若仅标注在某个 **public 方法**上，则只为该方法开启事务。
 
 ```java
 @Service
@@ -1905,7 +1905,7 @@ public class OrderService {
 | `timeout`     | 超时（秒）         | 按业务设置                               |
 | `readOnly`    | 只读事务优化       | 查询方法设为 `true`                      |
 
-**传播行为典型场景**：
+##### 传播行为典型场景
 
 | 传播行为       | 场景                     |
 | -------------- | ------------------------ |
@@ -1917,12 +1917,12 @@ public class OrderService {
 
 | 失效场景                  | 解决方案                                   |
 | ------------------------- | ------------------------------------------ |
-| 自调用（`this.method()`） | 通过 `ApplicationContext` 获取代理对象调用 |
+| 自调用（`this.method()`） | 拆分为独立 Bean（推荐），或通过 `ApplicationContext` 获取代理对象调用 |
 | 非 public 方法            | 改为 public                                |
 | 异常被 catch 且未抛出     | 重新抛出或手动标记回滚                     |
 | 未指定 `rollbackFor`      | 添加 `rollbackFor = Exception.class`       |
 
-**自调用修复示例**：
+##### 自调用修复示例
 
 ```java
 @Service
@@ -1942,14 +1942,58 @@ public class OrderService {
 
 ---
 
+#### 事件的订阅与分发机制
+
+`publishEvent` 与监听器之间并没有显式的绑定关系，是否被触发完全由**类型匹配**决定。理解这套规则，才能解释监听器为什么会被调用，以及为什么有时"发了却没人收"。
+
+##### 隐式订阅：类型即路由
+
+监听器不需要声明"我订阅哪个事件"，Spring 直接以**方法参数的声明类型**作为订阅主题：
+
+```java
+@Component
+public class OrderEventListener {
+
+    // 参数类型即订阅主题：只接收 OrderCreatedEvent
+    @EventListener
+    public void onOrderCreated(OrderCreatedEvent event) { ... }
+
+    // 参数声明为父类，则接收 ApplicationEvent 体系内的全部子类事件
+    @EventListener
+    public void onAnyEvent(ApplicationEvent event) { ... }
+}
+```
+
+- 容器启动时扫描所有 `@EventListener` 方法，读取参数类型，建立「事件类型 → 监听器」映射
+- 匹配基于 `isAssignableFrom`，**支持继承**：事件子类会命中参数为父类的监听器
+- 路由键是**类型而非名称**，因此无法用"主题名"区分同一类型的多次发布，需要区分语义时应拆分为不同的事件类
+
+##### 分发机制：多播器遍历匹配
+
+`publishEvent` 本身不做分发，它把事件交给 `ApplicationEventMulticaster`（默认实现 `SimpleApplicationEventMulticaster`），由后者找出所有匹配的监听器并逐个调用：
+
+```java
+publisher.publishEvent(new OrderCreatedEvent(order));
+//   ↓  ApplicationEventMulticaster
+//   ↓  遍历容器内全部监听器，逐个判断：
+//        listenerParameterType.isAssignableFrom(event.getClass())
+//   ↓  匹配 → 调用该监听器；不匹配 → 静默跳过
+```
+
+| 特征         | 含义                                                         |
+| ------------ | ------------------------------------------------------------ |
+| **同步**     | 默认在发布线程上直接调用监听器（`@Async` 可改为异步），监听器的耗时与异常都会反馈给发布方 |
+| **多播**     | 一个事件可被多个监听器接收，彼此独立，执行顺序无保证         |
+| **静默跳过** | 无匹配监听器时不抛异常——"发布了但没有监听者"是合法状态       |
+| **进程内**   | 不具备持久化能力，跨进程或需要可靠投递的场景，必须另接 MQ 等机制 |
+
+> 排查"通知没发出去"时容易踩的坑：`publishEvent` 没有抛异常，并不等于监听器执行过——中间可能压根没有匹配到监听器。
+
+---
+
 #### 事件监听与事务同步：`@EventListener` vs `@TransactionalEventListener`
 
 在业务中常需要在事务提交后执行操作（如发送消息），避免因事务回滚导致不一致。Spring 提供两种事件监听：
-
-- `@EventListener`：立即执行，与发布者同一事务。
-- `@TransactionalEventListener`：在事务提交后执行。
-
-##### 对比
 
 | 维度           | `@EventListener`     | `@TransactionalEventListener` |
 | -------------- | -------------------- | ----------------------------- |
@@ -2006,20 +2050,6 @@ public class CacheService {
 
 #### 事务与事件协同的最佳实践
 
-##### 与 MyBatis 整合
-
-Spring Boot + MyBatis 项目中，`@Transactional` 直接作用于 Mapper 方法，无需额外配置：
-
-```java
-@Service
-public class ProductService {
-    @Transactional(rollbackFor = Exception.class)
-    public void batchInsert(List<Product> products) {
-        products.forEach(productMapper::insert);
-    }
-}
-```
-
 ##### 事务边界原则
 
 > **黄金法则**：事务方法只做数据库操作，不做远程调用、文件 IO、耗时计算。
@@ -2030,34 +2060,13 @@ public class ProductService {
 | 调用同一事务内的其他 DB 操作 | 调用第三方 API           |
 | 发布事件（交给监听器）       | 在事务中执行大量循环逻辑 |
 
----
+##### 常见误区
 
-#### 关键规范与避坑清单
-
-##### 事务激活
-- 确认 `@EnableTransactionManagement` 存在于配置类（Spring Boot 主类即可）。
-- 自定义数据源时，务必显式添加。
-
-##### 事务边界
-- `@Transactional` 仅用于 `public` 方法。
-- 必须指定 `rollbackFor = Exception.class`。
-- 禁止在类内通过 `this` 调用事务方法。
-- 查询方法加上 `@Transactional(readOnly = true)`。
-
-##### 事件监听
-- 强一致性外部调用 → `@TransactionalEventListener`。
-- 轻量级、允许脏读操作 → `@EventListener`。
-- 避免在监听器中开启新事务。
-
-##### 典型错误
-
-| 错误                                | 后果                   | 正确做法                                 |
-| ----------------------------------- | ---------------------- | ---------------------------------------- |
-| 忘记 `@EnableTransactionManagement` | 事务完全不生效         | 显式添加                                 |
-| 在 `@EventListener` 中调用外部服务  | 外部异常导致业务回滚   | 改用 `@TransactionalEventListener`       |
-| 事务中发送 MQ                       | 事务回滚后消息已发出   | 将 MQ 放在 `@TransactionalEventListener` |
-| 事务中执行大批量循环                | 长事务阻塞连接池       | 分批或拆分事务                           |
-| 捕获异常后不抛出                    | 异常被吞，事务正常提交 | 重新抛出或手动回滚                       |
+| 误区                               | 后果                                         | 正确做法                                                |
+| ---------------------------------- | -------------------------------------------- | ------------------------------------------------------- |
+| 在事务中直接发送 MQ 或调用外部接口 | 事务回滚后消息已发出，出现"通知发了业务没成" | 事务内只 `publishEvent`，投递交给 `AFTER_COMMIT` 监听器 |
+| 在监听器中开启新事务               | 事务边界混乱，失败无法回滚到主事务           | 监听器保持无事务，改由业务方统一编排                    |
+| 认为 `publishEvent` 无异常即已投递 | 无匹配监听器时静默跳过，消息实际未发出       | 确认存在参数类型匹配的监听器                            |
 
 ------
 

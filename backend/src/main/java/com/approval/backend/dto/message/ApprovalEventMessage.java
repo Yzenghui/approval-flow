@@ -16,6 +16,15 @@ import lombok.Data;
 @Data
 public class ApprovalEventMessage {
 
+    /** 通知类型：申请被驳回，收件人为流程发起人 */
+    public static final int TYPE_REJECT = 0;
+
+    /** 通知类型：待办提醒，收件人为当前节点的审批人 */
+    public static final int TYPE_TODO = 1;
+
+    /** 通知类型：申请已通过，收件人为流程发起人 */
+    public static final int TYPE_APPROVED = 2;
+
     /** 流程实例ID */
     private Long instanceId;
 

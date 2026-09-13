@@ -3,6 +3,7 @@ package com.approval.backend.service;
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
+import com.approval.backend.mq.ApprovalEventProducer;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import org.junit.jupiter.api.AfterEach;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +32,14 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 class TaskServiceConcurrencyTest {
+
+    /**
+     * 替换真实生产者：通过 / 驳回现在都会登记通知事件，
+     * 若真的投到 RocketMQ，消费端异步落库的时机可能与本用例的 tearDown清理互相竞争（外键冲突）。
+     * 本用例只关心并发下的审批唯一性。
+     */
+    @MockBean
+    private ApprovalEventProducer approvalEventProducer;
 
     @Autowired
     private TaskService taskService;

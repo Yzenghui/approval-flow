@@ -8,6 +8,7 @@ import com.approval.backend.dto.request.SubmitApplicationRequest;
 import com.approval.backend.dto.response.*;
 import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
+import com.approval.backend.service.event.NotificationEventPublisher;
 import com.approval.backend.service.ProcessInstanceService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -38,6 +39,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     private final TaskMapper taskMapper;
     private final ApprovalRecordMapper approvalRecordMapper;
     private final ProcessCacheHelper processCacheHelper;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     /**
      * 复用 Spring 容器里已配置好的 ObjectMapper（JavaTimeModule、未知字段容错等）。
@@ -45,7 +47,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
      */
     private final ObjectMapper objectMapper;
 
-    public ProcessInstanceServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper, ProcessCacheHelper processCacheHelper, ObjectMapper objectMapper) {
+    public ProcessInstanceServiceImpl(UserMapper userMapper, RoleMapper roleMapper, ProcessDefinitionMapper processDefinitionMapper, ProcessNodeMapper processNodeMapper, ProcessInstanceMapper processInstanceMapper, TaskMapper taskMapper, ApprovalRecordMapper approvalRecordMapper, ProcessCacheHelper processCacheHelper, NotificationEventPublisher notificationEventPublisher, ObjectMapper objectMapper) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.processDefinitionMapper = processDefinitionMapper;
@@ -53,6 +55,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         this.taskMapper = taskMapper;
         this.approvalRecordMapper = approvalRecordMapper;
         this.processCacheHelper = processCacheHelper;
+        this.notificationEventPublisher = notificationEventPublisher;
         this.objectMapper = objectMapper;
     }
 
@@ -573,6 +576,9 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             task.setSubmitRound(processInstance.getSubmitCount());
             task.setStatus(0);
             taskMapper.insert(task);
+
+            // 任务落库后主键才回填，通知该节点的审批人
+            notificationEventPublisher.publishTodo(processInstance, task);
 
             break;
         }

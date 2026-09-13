@@ -1,9 +1,8 @@
-package com.approval.backend.service.impl;
+package com.approval.backend.service;
 
 import com.approval.backend.dto.message.ApprovalEventMessage;
 import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
-import com.approval.backend.service.NotificationService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 通知落库幂等的集成测试
  * <p>
- * 单测{@link NotificationServiceImplTest} 里的 {@code DuplicateKeyException} 是 <b> mock 抛出来的</b>，
+ * 单测{@link com.approval.backend.service.impl.NotificationServiceImplTest} 里的 {@code DuplicateKeyException} 是 <b> mock 抛出来的</b>，
  * 而真实链路是「MySQL 报 1062 → Spring 的 SQLExceptionTranslator 把它转换成 DuplicateKeyException」
  * 这段映射只发生在框架内部，mock 表达不了，只有连真库才能验证。
  * </p>

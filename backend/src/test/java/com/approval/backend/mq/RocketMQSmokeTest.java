@@ -1,4 +1,4 @@
-package com.approval.backend;
+package com.approval.backend.mq;
 
 import com.approval.backend.config.rocketmq.RocketMQConstant;
 import lombok.extern.slf4j.Slf4j;

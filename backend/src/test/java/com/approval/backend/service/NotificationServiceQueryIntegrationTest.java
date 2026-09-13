@@ -1,4 +1,4 @@
-package com.approval.backend.service.impl;
+package com.approval.backend.service;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
@@ -15,7 +15,6 @@ import com.approval.backend.mapper.ProcessInstanceMapper;
 import com.approval.backend.mapper.ProcessNodeMapper;
 import com.approval.backend.mapper.TaskMapper;
 import com.approval.backend.mapper.UserMapper;
-import com.approval.backend.service.NotificationService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @DisplayName("通知服务（真实 SQL 的读侧行为）")
-class NotificationQueryIntegrationTest {
+class NotificationServiceQueryIntegrationTest {
 
     /** 三条通知写入同一个秒级时间戳，模拟"一次提交批量产生待办通知"的场景 */
     private static final LocalDateTime SAME_SECOND = LocalDateTime.of(2026, 9, 12, 10, 0, 0);

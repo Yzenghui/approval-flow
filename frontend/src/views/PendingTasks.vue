@@ -53,6 +53,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
+import { formatDateTime, formatFormData } from '@/utils/format'
 
 const router = useRouter()
 
@@ -62,33 +63,14 @@ const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(10)
 
-const formatDateTime = (isoString) => {
-  if (!isoString) return '—'
-  return isoString.replace('T', ' ').substring(0, 19)
-}
-
-const formatFormData = (formData) => {
-  if (!formData) return '—'
-  try {
-    const data = typeof formData === 'string' ? JSON.parse(formData) : formData
-    return Object.entries(data)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(' | ')
-  } catch {
-    return '—'
-  }
-}
-
 const loadData = async () => {
   loading.value = true
   try {
     const res = await request.get('/user/tasks/pending', {
       params: { pageNum: pageNum.value, pageSize: pageSize.value },
     })
-    if (res.code === 200) {
-      tableData.value = res.data.records || []
-      total.value = res.data.total || 0
-    }
+    tableData.value = res.data.records || []
+    total.value = res.data.total || 0
   } catch (error) {
     console.error('加载待办列表失败', error)
   } finally {

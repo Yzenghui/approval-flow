@@ -101,6 +101,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
+import { formatDateTime } from '@/utils/format'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -136,11 +137,6 @@ const actionMap = {
 }
 const getActionText = (action) => actionMap[action] || '未知'
 
-const formatDateTime = (isoString) => {
-  if (!isoString) return '—'
-  return isoString.replace('T', ' ').substring(0, 19)
-}
-
 const parsedFormData = computed(() => {
   if (!detail.value.formData) return {}
   try {
@@ -158,10 +154,8 @@ const loadDetail = async () => {
   loading.value = true
   try {
     const res = await request.get(`/user/instances/${instanceId}`)
-    if (res.code === 200) {
-      detail.value = res.data
-      records.value = res.data.records || []
-    }
+    detail.value = res.data
+    records.value = res.data.records || []
   } catch (error) {
     console.error('加载详情失败', error)
   } finally {
@@ -182,14 +176,12 @@ const handleSubmitDraft = async () => {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    const res = await request.post(`/user/instances/${instanceId}/submit`)
-    if (res.code === 200) {
-      ElMessage.success('提交成功')
-      loadDetail()
-      setTimeout(() => {
-        router.push('/instances')
-      }, 1500)
-    }
+    await request.post(`/user/instances/${instanceId}/submit`)
+    ElMessage.success('提交成功')
+    loadDetail()
+    setTimeout(() => {
+      router.push('/instances')
+    }, 1500)
   } catch (error) {
     if (error !== 'cancel') console.error('提交失败', error)
   }
@@ -208,11 +200,9 @@ const handleWithdraw = async () => {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    const res = await request.post(`/user/instances/${instanceId}/withdraw`)
-    if (res.code === 200) {
-      ElMessage.success('撤回成功')
-      loadDetail()
-    }
+    await request.post(`/user/instances/${instanceId}/withdraw`)
+    ElMessage.success('撤回成功')
+    loadDetail()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('撤回失败', error)

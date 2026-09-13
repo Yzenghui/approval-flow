@@ -74,13 +74,11 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    const success = await userStore.login(form.username, form.password)
-    if (success) {
-      ElMessage.success('登录成功')
-      router.push('/')
-    }
-  } catch {
-    // 错误已在 request 拦截器中处理
+    await userStore.login(form.username, form.password)
+    ElMessage.success('登录成功')
+    router.push('/')
+  } catch (error) {
+    console.error('登录失败', error)
   } finally {
     loading.value = false
   }

@@ -136,10 +136,8 @@ const loadProfile = async () => {
   loading.value = true
   try {
     const res = await request.get('/user/profile')
-    if (res.code === 200) {
-      userInfo.value = res.data
-      emailForm.email = res.data.email || ''
-    }
+    userInfo.value = res.data
+    emailForm.email = res.data.email || ''
   } catch (error) {
     console.error('加载个人信息失败', error)
     ElMessage.error('加载个人信息失败')
@@ -172,16 +170,14 @@ const handleUpdateEmail = async () => {
 
   submittingEmail.value = true
   try {
-    const res = await request.patch('/user/profile', { email: emailForm.email })
-    if (res.code === 200) {
-      ElMessage.success('修改成功')
-      userInfo.value.email = emailForm.email
-      userStore.userInfo.email = emailForm.email
-      const storedUserInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-      storedUserInfo.email = emailForm.email
-      localStorage.setItem('userInfo', JSON.stringify(storedUserInfo))
-      isEditingEmail.value = false
-    }
+    await request.patch('/user/profile', { email: emailForm.email })
+    ElMessage.success('修改成功')
+    userInfo.value.email = emailForm.email
+    userStore.userInfo.email = emailForm.email
+    const storedUserInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+    storedUserInfo.email = emailForm.email
+    localStorage.setItem('userInfo', JSON.stringify(storedUserInfo))
+    isEditingEmail.value = false
   } catch (error) {
     console.error('修改失败', error)
   } finally {
@@ -245,16 +241,14 @@ const handleUpdatePassword = async () => {
 
   submittingPassword.value = true
   try {
-    const res = await request.put('/user/password', {
+    await request.put('/user/password', {
       oldPassword: passwordForm.oldPassword,
       newPassword: passwordForm.newPassword,
     })
-    if (res.code === 200) {
-      ElMessage.success('密码修改成功，请重新登录')
-      passwordDialogVisible.value = false
-      userStore.logout()
-      router.push('/login')
-    }
+    ElMessage.success('密码修改成功，请重新登录')
+    passwordDialogVisible.value = false
+    userStore.logout()
+    router.push('/login')
   } catch (error) {
     console.error('修改密码失败', error)
   } finally {

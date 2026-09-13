@@ -120,10 +120,8 @@ const loadDefinitions = async () => {
     const res = await request.get('/user/available-definitions', {
       params: { pageNum: defPageNum.value, pageSize: defPageSize.value },
     })
-    if (res.code === 200) {
-      definitions.value = res.data.records || []
-      defTotal.value = res.data.total || 0
-    }
+    definitions.value = res.data.records || []
+    defTotal.value = res.data.total || 0
   } catch (error) {
     console.error('加载流程列表失败', error)
   } finally {
@@ -185,14 +183,12 @@ const handleSubmit = async () => {
 
   submitting.value = true
   try {
-    const res = await request.post('/user/instances', {
+    await request.post('/user/instances', {
       definitionId: selectedDefinition.value.id,
       formData: JSON.stringify(prepareFormData()),
     })
-    if (res.code === 200) {
-      ElMessage.success('提交成功')
-      router.push('/instances')
-    }
+    ElMessage.success('提交成功')
+    router.push('/instances')
   } catch (error) {
     console.error('提交失败', error)
   } finally {
@@ -206,14 +202,12 @@ const handleSaveDraft = async () => {
   // 保存草稿不校验，允许保存空内容
   savingDraft.value = true
   try {
-    const res = await request.post('/user/drafts', {
+    await request.post('/user/drafts', {
       definitionId: selectedDefinition.value.id,
       formData: JSON.stringify(prepareFormData()),
     })
-    if (res.code === 200) {
-      ElMessage.success('草稿保存成功')
-      router.push('/instances')
-    }
+    ElMessage.success('草稿保存成功')
+    router.push('/instances')
   } catch (error) {
     console.error('保存草稿失败', error)
   } finally {

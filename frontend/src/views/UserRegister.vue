@@ -130,18 +130,16 @@ const handleRegister = async () => {
 
   loading.value = true
   try {
-    const res = await request.post('/auth/register', {
+    await request.post('/auth/register', {
       username: form.username,
       password: form.password,
       name: form.name,
       email: form.email,
     })
-    if (res.code === 200) {
-      ElMessage.success('注册成功，请登录')
-      router.push('/login')
-    }
-  } catch {
-    // 错误已在 request 拦截器中处理
+    ElMessage.success('注册成功，请登录')
+    router.push('/login')
+  } catch (error) {
+    console.error('注册失败', error)
   } finally {
     loading.value = false
   }

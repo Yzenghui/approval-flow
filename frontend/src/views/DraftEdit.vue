@@ -118,42 +118,38 @@ const loadData = async () => {
   try {
     // 1. 加载草稿数据
     const instanceRes = await request.get(`/user/instances/${instanceId}`)
-    if (instanceRes.code === 200) {
-      const data = instanceRes.data
-      definitionId.value = data.definitionId
-      definitionName.value = data.definitionName || ''
+    const data = instanceRes.data
+    definitionId.value = data.definitionId
+    definitionName.value = data.definitionName || ''
 
-      if (data.formData) {
-        const parsed = typeof data.formData === 'string' ? JSON.parse(data.formData) : data.formData
-        formData.value = parsed
-      }
+    if (data.formData) {
+      const parsed = typeof data.formData === 'string' ? JSON.parse(data.formData) : data.formData
+      formData.value = parsed
+    }
 
-      // 2. 获取流程详情（单个接口）
-      try {
-        const defRes = await request.get(`/user/available-definitions/${definitionId.value}`)
-        if (defRes.code === 200) {
-          const matched = defRes.data
+    // 2. 获取流程详情（单个接口）
+    try {
+      const defRes = await request.get(`/user/available-definitions/${definitionId.value}`)
+      const matched = defRes.data
 
-          currentDefinitionName.value = matched.name || ''
+      currentDefinitionName.value = matched.name || ''
 
-          // 解析 formSchema
-          let schema = matched.formSchema
-          if (typeof schema === 'string') {
-            try {
-              schema = JSON.parse(schema)
-            } catch (e) {
-              console.error('解析 formSchema 失败', e)
-              schema = []
-            }
-          }
-          formSchema.value = schema || []
+      // 解析 formSchema
+      let schema = matched.formSchema
+      if (typeof schema === 'string') {
+        try {
+          schema = JSON.parse(schema)
+        } catch (e) {
+          console.error('解析 formSchema 失败', e)
+          schema = []
         }
-      } catch (err) {
-        console.error('获取流程详情失败', err)
-        flowDisabled.value = true
-        errorMessage.value = err.message || ''
-        formSchema.value = []
       }
+      formSchema.value = schema || []
+    } catch (err) {
+      console.error('获取流程详情失败', err)
+      flowDisabled.value = true
+      errorMessage.value = err.message || ''
+      formSchema.value = []
     }
   } catch (error) {
     console.error('加载失败', error)
@@ -179,13 +175,11 @@ const handleSave = async () => {
 
   saving.value = true
   try {
-    const res = await request.put(`/user/drafts/${instanceId}`, {
+    await request.put(`/user/drafts/${instanceId}`, {
       formData: JSON.stringify(prepareFormData()),
     })
-    if (res.code === 200) {
-      ElMessage.success('草稿保存成功')
-      router.push('/instances')
-    }
+    ElMessage.success('草稿保存成功')
+    router.push('/instances')
   } catch (error) {
     console.error('保存失败', error)
   } finally {
@@ -208,11 +202,9 @@ const handleSubmit = async () => {
     })
 
     submitting.value = true
-    const res = await request.post(`/user/instances/${instanceId}/submit`)
-    if (res.code === 200) {
-      ElMessage.success('提交成功')
-      router.push('/instances')
-    }
+    await request.post(`/user/instances/${instanceId}/submit`)
+    ElMessage.success('提交成功')
+    router.push('/instances')
   } catch (error) {
     if (error !== 'cancel') {
       console.error('提交失败', error)

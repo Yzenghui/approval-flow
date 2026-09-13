@@ -74,6 +74,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
+import { formatDateTime, formatFormData } from '@/utils/format'
 
 const router = useRouter()
 
@@ -95,23 +96,6 @@ const statusMap = {
 const getStatusText = (status) => statusMap[status]?.text || '未知'
 const getStatusType = (status) => statusMap[status]?.type || 'info'
 
-const formatFormData = (formData) => {
-  if (!formData) return '—'
-  try {
-    const data = typeof formData === 'string' ? JSON.parse(formData) : formData
-    return Object.entries(data)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(' | ')
-  } catch {
-    return '—'
-  }
-}
-
-const formatDateTime = (isoString) => {
-  if (!isoString) return '—'
-  return isoString.replace('T', ' ').substring(0, 19)
-}
-
 const loadData = async () => {
   loading.value = true
   try {
@@ -120,10 +104,8 @@ const loadData = async () => {
       params.status = filterStatus.value
     }
     const res = await request.get('/user/instances', { params })
-    if (res.code === 200) {
-      tableData.value = res.data.records || []
-      total.value = res.data.total || 0
-    }
+    tableData.value = res.data.records || []
+    total.value = res.data.total || 0
   } catch (error) {
     console.error('加载失败', error)
   } finally {

@@ -340,37 +340,35 @@ const loadDetail = async () => {
   loading.value = true
   try {
     const res = await request.get(`/admin/definitions/${definitionId}`)
-    if (res.code === 200) {
-      const data = res.data
+    const data = res.data
 
-      // 解析 formSchema
-      let formSchema = data.formSchema
-      if (typeof formSchema === 'string') {
-        try {
-          formSchema = JSON.parse(formSchema)
-        } catch {
-          formSchema = []
-        }
+    // 解析 formSchema
+    let formSchema = data.formSchema
+    if (typeof formSchema === 'string') {
+      try {
+        formSchema = JSON.parse(formSchema)
+      } catch {
+        formSchema = []
       }
+    }
 
-      // 解析 nodes
-      let nodes = data.nodes
-      if (typeof nodes === 'string') {
-        try {
-          nodes = JSON.parse(nodes)
-        } catch {
-          nodes = []
-        }
+    // 解析 nodes
+    let nodes = data.nodes
+    if (typeof nodes === 'string') {
+      try {
+        nodes = JSON.parse(nodes)
+      } catch {
+        nodes = []
       }
+    }
 
-      form.value = {
-        name: data.name || '',
-        roleCode: data.roleCode || '',
-        status: data.status ?? 1,
-        version: data.version || 1,
-        formSchema: formSchema || [],
-        nodes: nodes || [],
-      }
+    form.value = {
+      name: data.name || '',
+      roleCode: data.roleCode || '',
+      status: data.status ?? 1,
+      version: data.version || 1,
+      formSchema: formSchema || [],
+      nodes: nodes || [],
     }
   } catch (error) {
     console.error('加载失败', error)
@@ -472,17 +470,14 @@ const handleSave = async () => {
       nodes: form.value.nodes,
     }
 
-    let res
     if (isCreateMode) {
-      res = await request.post('/admin/definitions', payload)
+      await request.post('/admin/definitions', payload)
     } else {
-      res = await request.patch(`/admin/definitions/${definitionId}`, payload)
+      await request.patch(`/admin/definitions/${definitionId}`, payload)
     }
 
-    if (res.code === 200) {
-      ElMessage.success(isCreateMode ? '创建成功' : '保存成功')
-      router.push('/definitions')
-    }
+    ElMessage.success(isCreateMode ? '创建成功' : '保存成功')
+    router.push('/definitions')
   } catch (error) {
     console.error('保存失败', error)
     ElMessage.warning('保存失败，请检查条件表达式语法是否正确')

@@ -219,6 +219,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import { formatDateTime } from '@/utils/format'
 
 const loading = ref(false)
 const tableData = ref([])
@@ -270,11 +271,6 @@ const getRoleText = (roleCode) => {
 }
 
 const dialogTitle = computed(() => (isCreate.value ? '新增用户' : '编辑用户'))
-
-const formatDateTime = (isoString) => {
-  if (!isoString) return '—'
-  return isoString.replace('T', ' ').substring(0, 19)
-}
 
 // 新增/编辑表单校验规则
 const formRules = {
@@ -342,10 +338,8 @@ const loadData = async () => {
     if (filterRole.value) params.roleCode = filterRole.value
     if (filterStatus.value !== null && filterStatus.value !== '') params.status = filterStatus.value
     const res = await request.get('/admin/users', { params })
-    if (res.code === 200) {
-      tableData.value = res.data.records || []
-      total.value = res.data.total || 0
-    }
+    tableData.value = res.data.records || []
+    total.value = res.data.total || 0
   } catch (error) {
     console.error('加载失败', error)
   } finally {
@@ -405,9 +399,8 @@ const handleSubmit = async () => {
 
   submitting.value = true
   try {
-    let res
     if (isCreate.value) {
-      res = await request.post('/admin/users', {
+      await request.post('/admin/users', {
         username: formData.value.username,
         password: formData.value.password,
         name: formData.value.name,
@@ -415,18 +408,16 @@ const handleSubmit = async () => {
         roleCode: formData.value.roleCode,
       })
     } else {
-      res = await request.patch(`/admin/users/${currentUserId.value}`, {
+      await request.patch(`/admin/users/${currentUserId.value}`, {
         name: formData.value.name,
         email: formData.value.email,
         roleCode: formData.value.roleCode,
         status: formData.value.status,
       })
     }
-    if (res.code === 200) {
-      ElMessage.success(isCreate.value ? '创建成功' : '保存成功')
-      dialogVisible.value = false
-      loadData()
-    }
+    ElMessage.success(isCreate.value ? '创建成功' : '保存成功')
+    dialogVisible.value = false
+    loadData()
   } catch (error) {
     console.error('保存失败', error)
   } finally {
@@ -457,14 +448,12 @@ const handleSubmitPassword = async () => {
 
   submittingPassword.value = true
   try {
-    const res = await request.put(`/admin/users/${currentPasswordUserId.value}/password`, {
+    await request.put(`/admin/users/${currentPasswordUserId.value}/password`, {
       password: passwordForm.value.password,
     })
-    if (res.code === 200) {
-      ElMessage.success('密码重置成功')
-      passwordDialogVisible.value = false
-      loadData()
-    }
+    ElMessage.success('密码重置成功')
+    passwordDialogVisible.value = false
+    loadData()
   } catch (error) {
     console.error('重置密码失败', error)
   } finally {
@@ -488,14 +477,12 @@ const resetManagerForm = () => {
 const handleSubmitManager = async () => {
   submittingManager.value = true
   try {
-    const res = await request.put(`/admin/users/${managerTargetUser.value.id}/manager`, {
+    await request.put(`/admin/users/${managerTargetUser.value.id}/manager`, {
       managerId: managerForm.value.managerId ?? null,
     })
-    if (res.code === 200) {
-      ElMessage.success('修改上级成功')
-      managerDialogVisible.value = false
-      loadData()
-    }
+    ElMessage.success('修改上级成功')
+    managerDialogVisible.value = false
+    loadData()
   } catch (error) {
     console.error('修改上级失败', error)
   } finally {

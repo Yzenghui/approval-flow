@@ -61,6 +61,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
+import { formatDateTime } from '@/utils/format'
 
 const router = useRouter()
 
@@ -76,21 +77,14 @@ const actionMap = {
 }
 const getActionText = (action) => actionMap[action] || '未知'
 
-const formatDateTime = (isoString) => {
-  if (!isoString) return '—'
-  return isoString.replace('T', ' ').substring(0, 19)
-}
-
 const loadData = async () => {
   loading.value = true
   try {
     const res = await request.get('/user/tasks/completed', {
       params: { pageNum: pageNum.value, pageSize: pageSize.value },
     })
-    if (res.code === 200) {
-      tableData.value = res.data.records || []
-      total.value = res.data.total || 0
-    }
+    tableData.value = res.data.records || []
+    total.value = res.data.total || 0
   } catch (error) {
     console.error('加载已办列表失败', error)
   } finally {

@@ -77,6 +77,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
+import { formatDateTime } from '@/utils/format'
 import { useNotificationStore } from '@/stores/notification'
 
 const router = useRouter()
@@ -99,11 +100,6 @@ const typeMap = {
 const getTypeText = (type) => typeMap[type]?.text || '通知'
 const getTypeType = (type) => typeMap[type]?.type || 'info'
 
-const formatDateTime = (isoString) => {
-  if (!isoString) return '—'
-  return isoString.replace('T', ' ').substring(0, 19)
-}
-
 const loadData = async () => {
   loading.value = true
   try {
@@ -112,10 +108,8 @@ const loadData = async () => {
       params.onlyUnread = true
     }
     const res = await request.get('/user/notifications', { params })
-    if (res.code === 200) {
-      tableData.value = res.data.records || []
-      total.value = res.data.total || 0
-    }
+    tableData.value = res.data.records || []
+    total.value = res.data.total || 0
   } catch (error) {
     console.error('加载通知失败', error)
   } finally {

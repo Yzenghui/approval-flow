@@ -11,14 +11,10 @@ export const useUserStore = defineStore('user', () => {
   // 登录方法
   async function login(username, password) {
     const res = await request.post('/auth/login', { username, password })
-    if (res.code === 200) {
-      token.value = res.data.token
-      userInfo.value = res.data.userInfo
-      localStorage.setItem('token', res.data.token)
-      localStorage.setItem('userInfo', JSON.stringify(res.data.userInfo))
-      return true
-    }
-    return false
+    token.value = res.data.token
+    userInfo.value = res.data.userInfo
+    localStorage.setItem('token', res.data.token)
+    localStorage.setItem('userInfo', JSON.stringify(res.data.userInfo))
   }
 
   // 退出登录方法

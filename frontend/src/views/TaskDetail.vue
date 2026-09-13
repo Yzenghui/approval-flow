@@ -98,6 +98,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
+import { formatDateTime } from '@/utils/format'
 
 const router = useRouter()
 const route = useRoute()
@@ -125,11 +126,6 @@ const actionMap = {
 }
 const getActionText = (action) => actionMap[action] || '未知'
 
-const formatDateTime = (isoString) => {
-  if (!isoString) return '—'
-  return isoString.replace('T', ' ').substring(0, 19)
-}
-
 const parsedFormData = computed(() => {
   if (!detail.value.formData) return {}
   try {
@@ -153,10 +149,8 @@ const loadDetail = async () => {
   loading.value = true
   try {
     const res = await request.get(`/user/instances/${instanceId}`)
-    if (res.code === 200) {
-      detail.value = res.data
-      records.value = res.data.records || []
-    }
+    detail.value = res.data
+    records.value = res.data.records || []
   } catch (error) {
     console.error('加载详情失败', error)
     ElMessage.error('加载申请详情失败')
@@ -175,13 +169,11 @@ const handleApprove = async () => {
     })
 
     submitting.value = true
-    const res = await request.post(`/user/tasks/${taskId}/approve`, {
+    await request.post(`/user/tasks/${taskId}/approve`, {
       remark: remark.value,
     })
-    if (res.code === 200) {
-      ElMessage.success('审批通过')
-      router.push('/pending')
-    }
+    ElMessage.success('审批通过')
+    router.push('/pending')
   } catch (error) {
     if (error !== 'cancel') {
       console.error('审批失败', error)
@@ -200,13 +192,11 @@ const handleReject = async () => {
     })
 
     submitting.value = true
-    const res = await request.post(`/user/tasks/${taskId}/reject`, {
+    await request.post(`/user/tasks/${taskId}/reject`, {
       remark: remark.value,
     })
-    if (res.code === 200) {
-      ElMessage.success('已驳回')
-      router.push('/pending')
-    }
+    ElMessage.success('已驳回')
+    router.push('/pending')
   } catch (error) {
     if (error !== 'cancel') {
       console.error('驳回失败', error)

@@ -89,6 +89,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import { formatDateTime } from '@/utils/format'
 
 const router = useRouter()
 
@@ -99,11 +100,6 @@ const pageNum = ref(1)
 const pageSize = ref(10)
 const keyword = ref('')
 const filterStatus = ref(null)
-
-const formatDateTime = (isoString) => {
-  if (!isoString) return '—'
-  return isoString.replace('T', ' ').substring(0, 19)
-}
 
 const loadData = async () => {
   loading.value = true
@@ -119,10 +115,8 @@ const loadData = async () => {
       params.status = filterStatus.value
     }
     const res = await request.get('/admin/definitions', { params })
-    if (res.code === 200) {
-      tableData.value = res.data.records || []
-      total.value = res.data.total || 0
-    }
+    tableData.value = res.data.records || []
+    total.value = res.data.total || 0
   } catch (error) {
     console.error('加载流程列表失败', error)
   } finally {
@@ -145,12 +139,8 @@ const refreshList = () => {
 const handleStatusChange = async (row) => {
   try {
     const action = row.status === 1 ? 'enable' : 'disable'
-    const res = await request.put(`/admin/definitions/${row.id}/${action}`)
-    if (res.code === 200) {
-      ElMessage.success(row.status === 1 ? '已启用' : '已禁用')
-    } else {
-      row.status = row.status === 1 ? 0 : 1
-    }
+    await request.put(`/admin/definitions/${row.id}/${action}`)
+    ElMessage.success(row.status === 1 ? '已启用' : '已禁用')
   } catch (error) {
     row.status = row.status === 1 ? 0 : 1
     console.error('状态修改失败', error)

@@ -17,9 +17,7 @@ export const useNotificationStore = defineStore('notification', () => {
   async function fetchUnreadCount() {
     try {
       const res = await request.get('/user/notifications/unread-count')
-      if (res.code === 200) {
-        unreadCount.value = res.data || 0
-      }
+      unreadCount.value = res.data || 0
     } catch (error) {
       console.error('获取未读数失败', error)
     }

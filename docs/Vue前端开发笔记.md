@@ -318,6 +318,36 @@ async function getUser() {
 }
 ```
 
+**`await` 挂起了什么**：`async` 函数被调用时，会先同步执行到第一个 `await`；遇到 `await` 后函数在当前位置挂起（保存局部变量和执行位置），控制权交回调用者，其余代码照常执行。
+
+```javascript
+async function loadData() {
+  console.log('1');                          // 同步执行
+  const res = await axios.get('/api/user');  // 在此挂起，等待请求返回
+  console.log('2');                          // 请求返回后从挂起处继续
+  return res.data;
+}
+
+console.log('3');
+loadData();   // 不阻塞，立即返回一个 pending 状态的 Promise
+console.log('4');
+
+// 输出顺序：1 → 3 → 4 → 2
+```
+
+> 挂起的只是**这个函数自身的执行流**，不是整个程序。JS 是单线程的，但事件循环会继续处理其他任务，等待期间其他代码照常运行；恢复执行属于**微任务**，比 `setTimeout` 更早。
+
+**连续 `await` 是串行的**：每个 `await` 都会让函数停在原地，因此下面的写法总耗时 = A + B，无依赖关系时应改用 `Promise.all` 并发请求。
+
+```javascript
+// 串行：总耗时 = A + B
+const userList = await getUserList();
+const roleList = await getRoleList();
+
+// 并发：总耗时 = max(A, B)
+const [userList, roleList] = await Promise.all([getUserList(), getRoleList()]);
+```
+
 **哪些场景会返回 Promise？**
 
 在 Vue 开发中，以下操作都返回 Promise，需要用 `async/await` 或 `.then()` 处理：
@@ -2196,6 +2226,46 @@ const count = ref(1);
 </script>
 ```
 
+#### 下拉选择（el-select / el-option）
+
+用于从预设选项中选择，支持单选或多选。
+
+| 组件        | 属性          | 说明                 | 可选值          | 默认值  |
+| ----------- | ------------- | -------------------- | --------------- | ------- |
+| `el-select` | `v-model`     | 绑定选中值           | string / number | —       |
+|             | `multiple`    | 是否多选（值为数组） | boolean         | `false` |
+|             | `clearable`   | 是否可清空           | boolean         | `false` |
+|             | `filterable`  | 是否可搜索           | boolean         | `false` |
+|             | `placeholder` | 占位提示             | string          | —       |
+|             | `disabled`    | 是否禁用             | boolean         | `false` |
+| `el-option` | `label`       | 选项显示文本         | string          | —       |
+|             | `value`       | 选项对应的值         | string / number | —       |
+|             | `disabled`    | 是否禁用该选项       | boolean         | `false` |
+
+```vue
+<template>
+  <!-- 单选 -->
+  <el-select v-model="status" placeholder="请选择状态" clearable>
+    <el-option label="待审核" value="pending" />
+    <el-option label="已完成" value="approved" />
+    <el-option label="已驳回" value="rejected" />
+  </el-select>
+
+  <!-- 多选 + 可搜索 -->
+  <el-select v-model="roles" multiple filterable placeholder="请选择角色">
+    <el-option label="管理员" value="admin" />
+    <el-option label="审批人" value="approver" />
+  </el-select>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+
+const status = ref('');
+const roles = ref([]);
+</script>
+```
+
 #### 表单（el-form / el-form-item）
 
 | 组件           | 属性/事件 | 作用                    |
@@ -2475,6 +2545,42 @@ const handleClose = () => {
 </script>
 ```
 
+#### 徽标（el-badge）
+
+用于在图标或文字右上角显示数字、圆点标记（如顶栏通知的未读数）。
+
+| 属性        | 说明                              | 可选值                                        | 默认值   |
+| ----------- | --------------------------------- | --------------------------------------------- | -------- |
+| `value`     | 显示的数字或文本                  | string / number                               | —        |
+| `max`       | 超过后显示 `{max}+`（仅数字生效） | number                                        | `99`     |
+| `hidden`    | 是否隐藏徽标                      | boolean                                       | `false`  |
+| `is-dot`    | 只显示小圆点，不显示数字          | boolean                                       | `false`  |
+| `show-zero` | `value` 为 0 时是否仍显示         | boolean                                       | `true`   |
+| `type`      | 徽标颜色                          | `primary / success / warning / danger / info` | `danger` |
+
+```vue
+<template>
+  <!-- 数字徽标：未读数为 0 时隐藏 -->
+  <el-badge :value="unreadCount" :hidden="unreadCount === 0">
+    <el-icon @click="goNotifications"><Bell /></el-icon>
+  </el-badge>
+
+  <!-- 圆点徽标 -->
+  <el-badge is-dot>
+    <el-button>消息</el-button>
+  </el-badge>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import { Bell } from '@element-plus/icons-vue';
+
+const unreadCount = ref(3);
+</script>
+```
+
+> **注意**：徽标内容通过 `value` 传入，被标记的元素放在默认插槽中（图标、按钮或文字均可）。`show-zero` 默认为 `true`，即 `value` 为 `0` 时仍会显示，未读数场景需配合 `:hidden` 控制。
+
 #### 警告提示（el-alert）
 
 用于在页面中展示操作结果、系统状态等提示信息。
@@ -2516,30 +2622,33 @@ const handleClose = () => {
 
 #### 单选框（el-radio / el-radio-group）
 
-| 属性      | 作用         |
-| --------- | ------------ |
-| `v-model` | 绑定选中值   |
-| `label`   | 选项对应的值 |
+| 属性      | 作用                                              |
+| --------- | ------------------------------------------------- |
+| `v-model` | 绑定选中值（单选组写在 `el-radio-group` 上）      |
+| `value`   | 该选项对应的值（2.6.0 新增，推荐写法）            |
+| `label`   | 选项文字，未写 `value` 时会充当值，但该用法已废弃 |
 
 ```vue
 <template>
   <el-radio-group v-model="gender">
-    <el-radio label="male">男</el-radio>
-    <el-radio label="female">女</el-radio>
+    <el-radio value="male">男</el-radio>
+    <el-radio value="female">女</el-radio>
   </el-radio-group>
 </template>
 ```
+
+> **版本差异**：`value` 为 2.6.0 新增；`label` 充当值的旧用法已废弃、将于 3.0.0 移除，组内只写 `label` 会触发控制台警告。
 
 #### 复选框（el-checkbox / el-checkbox-group）
 
 用于多选场景，支持单个或成组使用。
 
-| 组件                | 属性       | 说明                              | 可选值          | 默认值  |
-| ------------------- | ---------- | --------------------------------- | --------------- | ------- |
-| `el-checkbox`       | `v-model`  | 双向绑定                          | boolean         | —       |
-|                     | `label`    | 单选框的选中值（配合 group 使用） | string / number | —       |
-|                     | `disabled` | 是否禁用                          | boolean         | `false` |
-| `el-checkbox-group` | `v-model`  | 绑定选中值的数组                  | array           | —       |
+| 组件                | 属性       | 说明                             | 可选值                             | 默认值  |
+| ------------------- | ---------- | -------------------------------- | ---------------------------------- | ------- |
+| `el-checkbox`       | `v-model`  | 双向绑定                         | boolean                            | —       |
+|                     | `value`    | 选项值（2.6.0 起，group 内生效） | string / number / boolean / object | —       |
+|                     | `disabled` | 是否禁用                         | boolean                            | `false` |
+| `el-checkbox-group` | `v-model`  | 绑定选中值的数组                 | array                              | —       |
 
 ```vue
 <template>
@@ -2548,9 +2657,9 @@ const handleClose = () => {
 
   <!-- 复选框组 -->
   <el-checkbox-group v-model="selectedOptions">
-    <el-checkbox label="option1">选项一</el-checkbox>
-    <el-checkbox label="option2">选项二</el-checkbox>
-    <el-checkbox label="option3">选项三</el-checkbox>
+    <el-checkbox value="option1">选项一</el-checkbox>
+    <el-checkbox value="option2">选项二</el-checkbox>
+    <el-checkbox value="option3">选项三</el-checkbox>
   </el-checkbox-group>
 </template>
 
@@ -2560,6 +2669,8 @@ const isRequired = ref(true);
 const selectedOptions = ref(['option1', 'option3']);
 </script>
 ```
+
+> **版本差异**：与单选框同理，`value` 为 2.6.0 新增，`label` 充当值的旧用法已废弃、将于 3.0.0 移除。
 
 #### 开关（el-switch）
 

@@ -1952,26 +1952,26 @@ public class OrderService {
 
 ```java
 @Service
-public class TaskServiceImpl {
+public class OrderService {
 
     private final ApplicationEventPublisher applicationEventPublisher;
 
     // 构造注入：拿到的是容器自身的发布能力，而非某个具体业务 Bean
-    public TaskServiceImpl(ApplicationEventPublisher applicationEventPublisher) {
+    public OrderService(ApplicationEventPublisher applicationEventPublisher) {
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void rejectTask(Long taskId, String remark, Long userId) {
-        // ... 更新任务状态、写入审批记录 ...
+    public void cancelOrder(Long orderId, String reason) {
+        // ... 更新订单状态、写入操作流水 ...
         // 事务内只"登记"事件，真正的投递交给事务提交后的监听器
-        applicationEventPublisher.publishEvent(eventMessage);
+        applicationEventPublisher.publishEvent(event);
     }
 }
 ```
 
 - **只有一个入口方法**：`publishEvent(Object event)`，返回 `void`，参数里**没有"主题/目的地"**——投给谁完全由监听器的参数类型决定（见下）
-- **事件不必继承 `ApplicationEvent`**：Spring 4.2 起支持任意 POJO 充当事件，项目中的 `ApprovalEventMessage` 就是普通 `@Data` 类，它同时兼作 MQ 消息体，一个对象承担两个角色
+- **事件不必继承 `ApplicationEvent`**：Spring 4.2 起支持任意 POJO 充当事件，一个普通 `@Data` 类即可；当它同时要作为 MQ 消息体时，同一个对象可以承担两个角色
 - **同步调用**：`publishEvent` 会阻塞到所有匹配的监听器执行完成（`@TransactionalEventListener` 除外，它被登记进事务同步器，延后到事务阶段才执行）
 - **不会抛"无人订阅"异常**：没有匹配的监听器时静默返回，所以"调用没报错"不能作为"通知已发出"的证据
 
@@ -2077,51 +2077,93 @@ public class CacheService {
 
 > **注意**：`@TransactionalEventListener` 默认 `fallbackExecution = false`，意味着**发布事件时若没有活动事务，该监听器会被直接跳过**。业务方法漏加 `@Transactional` 时，`publishEvent` 依然不报错，通知却永远发不出去——这类问题排查起来相当隐蔽。确有需要时可显式设为 `true`，让它退化为普通监听器立即执行。
 
-##### 项目实战：驳回通知的完整触发链路
+##### 完整链路示例：从业务动作到消息投递
 
-"申请被驳回后通知发起人"这条链路，用最少的代码展示了 `applicationEventPublisher.publishEvent` 与事务的配合方式：
+把这两个注解放进一条真实链路里，逻辑会更清楚。下面以“订单取消后通知下单人”为例：
 
 ```java
-// ① 业务侧：事务内只登记事件（TaskServiceImpl）
-@Override
-@Transactional(rollbackFor = Exception.class)
-public void rejectTask(Long taskId, String remark, Long userId) {
-    // ... 更新任务状态、写入审批记录 ...
-    publishRejectEvent(task, remark);
+// ① 业务侧：事务内只登记事件
+@Service
+public class OrderService {
+
+    private final OrderEventPublisher orderEventPublisher;
+
+    public OrderService(OrderEventPublisher orderEventPublisher) {
+        this.orderEventPublisher = orderEventPublisher;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelOrder(Long orderId, String reason) {
+        Order order = orderMapper.selectById(orderId);
+        // ... 更新订单状态、写入操作流水 ...
+        orderEventPublisher.publishCancelled(order, reason);
+    }
 }
 
-private void publishRejectEvent(Task task, String remark) {
-    ProcessInstance processInstance = processInstanceMapper.selectById(task.getInstanceId());
-
-    ApprovalEventMessage eventMessage = new ApprovalEventMessage();
-    eventMessage.setTaskId(task.getId());
-    eventMessage.setType(0);                                      // 0 = 驳回
-    eventMessage.setRecipientId(processInstance.getInitiatorId()); // 收件人 = 流程发起人
-    // 触发通知的入口：交给 Spring 事件总线，而不是直接调用 MQ
-    applicationEventPublisher.publishEvent(eventMessage);
-}
-
-// ② 监听侧：等事务提交后再投递（ApprovalEventProducer）
+// ② 发布器：组装事件并登记到事件总线
 @Component
-public class ApprovalEventProducer {
+public class OrderEventPublisher {
+
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    public OrderEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
+
+    public void publishCancelled(Order order, String reason) {
+        String content = "您的订单【" + order.getTitle() + "】已取消"
+                + (StringUtils.hasText(reason) ? "，原因：" + reason : "");
+
+        OrderCancelledEvent event = new OrderCancelledEvent();
+        event.setOrderId(order.getId());
+        event.setRecipientId(order.getBuyerId());  // 收件人 = 下单人
+        event.setContent(content);
+
+        // 触发通知的入口：交给 Spring 事件总线，而不是直接调用 MQ
+        applicationEventPublisher.publishEvent(event);
+    }
+}
+
+// ③ 监听侧：等事务提交后再投递
+@Component
+public class OrderEventProducer {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void sendAfterCommit(ApprovalEventMessage eventMessage) {
-        // 走到这里事务已提交，投递失败也不会回滚审批结果
-        producer.send(buildMessage(eventMessage));
+    public void sendAfterCommit(OrderCancelledEvent event) {
+        // 走到这里事务已提交，投递失败也不会回滚业务结果
+        producer.send(buildMessage(event));
     }
 }
 ```
 
 把链路拆成三段，各段职责边界就清楚了：
 
-| 阶段       | 执行者                  | 动作                                          | 关键点                                  |
-| ---------- | ----------------------- | --------------------------------------------- | --------------------------------------- |
-| 事务内     | `TaskServiceImpl`       | `applicationEventPublisher.publishEvent(...)` | 只登记，不碰 MQ；事务回滚则事件随之作废  |
-| 事务提交后 | `ApprovalEventProducer` | 投递 RocketMQ `approval-event` 主题           | `AFTER_COMMIT` 触发，失败只记日志不外抛  |
-| 消费端     | `ApprovalEventConsumer` | 按 `uk_task_type` 幂等落库                    | 重复消息撞唯一键后忽略                  |
+| 阶段       | 执行者               | 动作                                        | 关键点                                  |
+| ---------- | -------------------- | ------------------------------------------- | --------------------------------------- |
+| 事务内     | `OrderService`       | `orderEventPublisher.publishCancelled(...)` | 只登记，不碰 MQ；事务回滚则事件随之作废  |
+| 事务提交后 | `OrderEventProducer` | 投递 MQ 主题                                | `AFTER_COMMIT` 触发，失败只记日志不外抛  |
+| 消费端     | `OrderEventConsumer` | 按业务唯一键幂等落库                        | 重复消息撞唯一键后忽略                  |
 
-> 这也解释了为什么**不能**在 `rejectTask` 里直接 `producer.send(...)`：一旦后续逻辑抛异常导致事务回滚，消息却已经发出去了，就会出现"通知说已驳回、实际状态没变"的数据不一致。
+> 这也解释了为什么**不能**在业务方法里直接 `producer.send(...)`：一旦后续逻辑抛异常导致事务回滚，消息却已经发出去了，就会出现“通知说已取消、实际状态没变”的数据不一致。
+
+##### 事件组装收口到发布器
+
+上面链路里，“事件长什么样”完全由 `OrderEventPublisher` 承担，业务方法只调用一个语义化方法。这个位置值得单独说明——它是可选的，但复杂度上来之后几乎必然会做。
+
+两种写法的差别：
+
+| 做法                            | 业务方法需要知道                       | 事件结构调整时           |
+| ------------------------------- | -------------------------------------- | ------------------------ |
+| 业务方法内直接 `new XxxEvent()` | 事件类名、每个字段、收件人规则、文案格式 | 改动散落在每个业务方法里 |
+| 收口到 `XxxEventPublisher`      | 只需调用一个语义化方法                 | 只改发布器一处           |
+
+收口带来三点好处：
+
+- **业务方法的语义更纯粹**：`publishCancelled(order, reason)` 读起来就是“订单被取消了”，不掺入“事件要带哪些字段”
+- **同类事件的规则只定义一次**：收件人、文案、必填字段集中在一处，不会因某个调用点漏设字段而产出“半个事件”
+- **便于统一加工**：日志、参数校验、字段裁剪都能加在发布器里，一处生效
+
+> 前面 `UserService` 那样在业务方法内 `new` 事件再 `publishEvent`，在只有一两个事件、字段极少的场景下完全够用。收口不是必须遵守的规则，而是事件种类变多之后自然出现的整理方式——什么时候做，取决于这份重复是否已经碍事。
 
 ---
 

@@ -6,6 +6,15 @@
         <h2>审批流系统</h2>
       </div>
       <div class="header-right">
+        <el-badge
+          v-if="!isAdmin"
+          :value="notificationStore.unreadCount"
+          :max="99"
+          :hidden="notificationStore.unreadCount === 0"
+          class="notification-badge"
+        >
+          <el-icon class="notification-bell" @click="goNotifications"><Bell /></el-icon>
+        </el-badge>
         <el-dropdown @command="handleCommand">
           <span class="user-dropdown">
             {{ userStore.userInfo?.name || userStore.userInfo?.username }}
@@ -41,18 +50,32 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-import { ArrowDown, Document, Edit, Clock, Check, Setting, User } from '@element-plus/icons-vue'
+import {
+  ArrowDown,
+  Document,
+  Edit,
+  Clock,
+  Check,
+  Setting,
+  User,
+  Bell,
+} from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { useNotificationStore } from '@/stores/notification'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const notificationStore = useNotificationStore()
 
 // 当前激活菜单
 const activeMenu = computed(() => route.path)
+
+// 管理员只做流程定义与用户管理，不发起申请也不会收到通知，因此不展示通知入口
+const isAdmin = computed(() => userStore.userInfo?.roleCode === 'ADMIN')
 
 // 根据角色返回菜单
 const menus = computed(() => {
@@ -72,6 +95,7 @@ const menus = computed(() => {
     { path: '/apply', title: '发起申请', icon: Edit },
     { path: '/pending', title: '待办任务', icon: Clock },
     { path: '/completed', title: '已办任务', icon: Check },
+    { path: '/notifications', title: '通知中心', icon: Bell },
   ]
 })
 
@@ -89,6 +113,34 @@ const handleCommand = async (command) => {
     router.push('/profile')
   }
 }
+
+// 跳转通知中心
+const goNotifications = () => {
+  router.push('/notifications')
+}
+
+// 未读数刷新：挂载时一次 + 路由切换后一次 + 页面重新可见时一次
+const refreshUnreadCount = () => {
+  if (isAdmin.value) return
+  notificationStore.fetchUnreadCount()
+}
+
+watch(() => route.path, refreshUnreadCount)
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    refreshUnreadCount()
+  }
+}
+
+onMounted(() => {
+  refreshUnreadCount()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
 </script>
 
 <style scoped>
@@ -115,6 +167,17 @@ const handleCommand = async (command) => {
 .header-right {
   display: flex;
   align-items: center;
+}
+
+.notification-badge {
+  margin-right: 20px;
+  line-height: 1;
+}
+
+.notification-bell {
+  font-size: 20px;
+  color: #ffffff;
+  cursor: pointer;
 }
 
 .user-dropdown {

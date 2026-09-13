@@ -22,6 +22,7 @@ const router = createRouter({
         { path: 'apply', component: () => import('@/views/ApplyForm.vue') },
         { path: 'pending', component: () => import('@/views/PendingTasks.vue') },
         { path: 'completed', component: () => import('@/views/CompletedTasks.vue') },
+        { path: 'notifications', component: () => import('@/views/NotificationList.vue') },
 
         // 申请相关页面（详情/草稿编辑/修改重提/审批）
         { path: 'instance/:id', component: () => import('@/views/InstanceDetail.vue') },

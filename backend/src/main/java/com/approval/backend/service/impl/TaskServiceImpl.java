@@ -179,7 +179,8 @@ public class TaskServiceImpl implements TaskService {
             approvalRecord.setRemark(remark);
             approvalRecordMapper.insert(approvalRecord);
         } finally {
-            redisLockUtil.unlock(lockKey, lockValue);
+            // 事务提交/回滚完成后再放锁：直接在此释放时事务尚未提交，并发请求能拿到锁读到旧状态
+            redisLockUtil.unlockAfterCompletion(lockKey, lockValue);
         }
     }
 
@@ -237,7 +238,8 @@ public class TaskServiceImpl implements TaskService {
             ProcessInstance processInstance = processInstanceMapper.selectById(task.getInstanceId());
             notificationEventPublisher.publishReject(processInstance, task, remark);
         } finally {
-            redisLockUtil.unlock(lockKey, lockValue);
+            // 事务提交/回滚完成后再放锁：直接在此释放时事务尚未提交，并发请求能拿到锁读到旧状态
+            redisLockUtil.unlockAfterCompletion(lockKey, lockValue);
         }
     }
 

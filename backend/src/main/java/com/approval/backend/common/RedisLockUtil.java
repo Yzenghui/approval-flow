@@ -38,7 +38,24 @@ public class RedisLockUtil {
         return Boolean.TRUE.equals(acquired) ? value : null;
     }
 
-    public void unlock(String key, String value) {
+    /**
+     * 释放锁的底层实现：校验 value 匹配后删除 key。
+     * 不对外暴露，调用方一律用 unlockAfterCompletion，无需自行判断是否处在事务中。
+     */
+    private void unlock(String key, String value) {
         redisTemplate.execute(UNLOCK_SCRIPT, Collections.singletonList(key), value);
+    }
+
+    /**
+     * 事务完成后释放锁（提交或回滚都会释放）
+     *
+     * 在 @Transactional 方法的 finally 里调用 unlock，方法体执行完毕时事务尚未提交，
+     * 此刻放锁会留下窗口，并发请求拿到锁后读到的是还未提交的旧数据，加锁本身就失去了意义，
+     * 放到 afterCompletion 才能让锁真正覆盖整个事务区间。
+     *
+     * 无事务上下文时退化为立即释放。
+     */
+    public void unlockAfterCompletion(String key, String value) {
+        TransactionSyncHelper.afterCompletion(() -> unlock(key, value));
     }
 }

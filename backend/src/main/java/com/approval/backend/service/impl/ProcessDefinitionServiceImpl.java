@@ -236,8 +236,9 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             processNodeMapper.insert(processNode);
         }
 
-        // 流程定义与节点均被修改，失效相关缓存（节点采用全量替换，旧缓存已不适用）
-        processCacheHelper.evictDefinition(id);
+        // 流程定义与节点均被修改，失效相关缓存
+        // 延迟到事务提交后删除，避免「缓存已删、事务未提交、并发请求回源写回旧值」的窗口
+        processCacheHelper.evictDefinitionAfterCommit(id);
 
         ProcessDefinition updatedProcessDefinition = processDefinitionMapper.selectById(id);
 
@@ -263,7 +264,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 .set(ProcessDefinition::getUpdateTime, LocalDateTime.now())
         );
 
-        // 状态变更后失效缓存，避免读到旧的 status 值
+        // 状态变更后失效缓存，避免读到旧的 status 值，删除异常由 ProcessCacheHelper 内部兜底
         processCacheHelper.evictDefinition(id);
     }
 
@@ -285,7 +286,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 .set(ProcessDefinition::getUpdateTime, LocalDateTime.now())
         );
 
-        // 状态变更后失效缓存，避免读到旧的 status 值
+        // 状态变更后失效缓存，避免读到旧的 status 值，删除异常由 ProcessCacheHelper 内部兜底
         processCacheHelper.evictDefinition(id);
     }
 

@@ -387,7 +387,7 @@ public class ImsApplication {
 >   • **创建时机**：由 Bean 自身的**作用域**决定  
 >
 >         单例（默认）：容器启动时初始化（`@Lazy` 标记则延迟至首次被注入时）  
->                                                                                                             
+>                                                                                                                   
 >         原型（`@Scope("prototype")`）：每次从容器获取时（注入或 `getBean()`）新建实例  
 >   • **创建机制**：Spring 采用 **"链式创建"**（**通用机制，与作用域无关**）  
 >     创建任意 Bean 时，均先递归创建其所有声明的依赖（遵循**各依赖自身的作用域规则**），并将这些**完整实例**传入目标 Bean 。
@@ -434,20 +434,20 @@ public class ImsApplication {
 >   @Service
 >   public class OrderService {
 >       private final PaymentService paymentService;
->                                     
+>                                       
 >       // 单构造器：参数列表 = 依赖声明，@Autowired 可省略
 >       public OrderService(PaymentService paymentService) {
 >           this.paymentService = paymentService; // 参数已是容器注入完成的 Bean 实例
 >       }
 >   }
->                                     
+>                                       
 >   @RestController
 >   public class OrderController {
 >       private final OrderService orderService;
 >       public OrderController(OrderService orderService) { // OrderService 作为完整实例传入
 >           this.orderService = orderService;
 >       }
->                                     
+>                                       
 >       @PostMapping("/orders")
 >       public String createOrder() {
 >           orderService.process();
@@ -1852,9 +1852,48 @@ public class PerformanceAspect {
 
 ---
 
-### 3.3 事务管理与事件同步
+### 3.3 事务与事件机制
 
-Spring 事务管理依赖 AOP 代理，`@Transactional` 负责声明事务边界；事件机制则以**类型匹配**的方式完成发布与订阅，`@TransactionalEventListener` 进一步把监听时机绑定到事务生命周期上。
+事务解决"一组数据库操作要么全成、要么全废"，事件让组件之间通过类型匹配解耦通信；两者在 `@TransactionalEventListener` 处交汇，把监听时机绑定到事务生命周期，使事件投递与提交结果强一致。
+
+#### 事务的本质：底层在做什么
+
+日常写的 `@Transactional` ，其实只是 Spring 接管了一个数据库连接并协调回滚。
+
+##### Spring 事务：本质是连接共享
+
+Spring 本身**不实现**事务，它做的事可以归结为三件：
+
+1. **同一连接**：`DataSourceTransactionManager` 把 `ConnectionHolder` 绑到当前线程（通过 `TransactionSynchronizationManager`），后续的 MyBatis 等数据库框架通过 `SpringManagedTransactionFactory` 复用这个被绑定的连接，而不是新建一个
+2. **关闭自动提交**：方法开始时把连接从"每条 SQL 自动提交"切换为"由事务管理器决定"，方法正常结束时统一提交
+3. **异常时回滚**：捕获到需要回滚的异常时，调用 `connection.rollback()` 通知数据库撤销事务内的修改
+
+> 这三件事决定了事务的边界。任何"事务失效"的问题，最终都可以归结到其中一件没做好：连接没绑上（多连接互相独立）、自动提交没关（单条 SQL 已自动提交）、异常没传出来（rollback 没被调用）。
+
+##### Redis 事务：批量执行，不真正回滚
+
+Redis 通过 `MULTI` / `EXEC` 也提供了一种"事务"语义：
+
+```redis
+MULTI
+SET k1 v1
+INCR k2
+EXEC
+```
+
+进入 `MULTI` 后的命令会进入一个**队列**，到 `EXEC` 时才**连续、串行、不被打断**地全部执行——期间不会插入其他客户端的命令。
+
+但它和数据库事务有**几个关键差异**：
+
+| 维度        | 数据库事务           | Redis 事务                  |
+| ----------- | -------------------- | --------------------------- |
+| 原子性      | 失败时整体回滚       | 不回滚，错误命令执行后跳过  |
+| 隔离性      | 多种隔离级别         | 无隔离概念，串行是天然保证 |
+| 一致性约束  | 由 DB 强制           | 由客户端代码保证            |
+
+Redis 不支持回滚不是因为性能取舍，而是设计上认为：**命令失败通常源于程序错误（语法、类型等）**，这种错误应该在开发期修代码，而不是靠运行时回滚掩盖。运行时回滚不仅掩盖 bug，还会带来额外复杂度。
+
+> 这意味着：如果 `MULTI` 队列里有语法错的命令，后续正确命令仍会执行。在 Spring 里用 `RedisTemplate.execute(SessionCallback)` 等方式封装时，拿到的是"批处理"而不是"ACID 事务"。
 
 ---
 

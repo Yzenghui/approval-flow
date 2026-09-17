@@ -11,7 +11,6 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 /**
@@ -65,7 +64,7 @@ class MqOutboxSchedulerTest {
 
         scheduler.dispatchPending();
 
-        verify(approvalEventProducer).send(eq("approval-event"), isNull(), eq("7"), eq("{\"taskId\":7}"));
+        verify(approvalEventProducer).send(eq("approval-event"), eq("7"), eq("{\"taskId\":7}"));
         verify(mqOutboxService).markSent(1L);
         verify(mqOutboxService, never()).markFailed(any(), any());
     }
@@ -78,7 +77,7 @@ class MqOutboxSchedulerTest {
         when(mqOutboxService.loadDue(anyInt())).thenReturn(List.of(broken, healthy));
 
         RuntimeException failure = new RuntimeException("broker down");
-        doThrow(failure).when(approvalEventProducer).send(eq("approval-event"), isNull(), eq("1"), any());
+        doThrow(failure).when(approvalEventProducer).send(eq("approval-event"), eq("1"), any());
 
         scheduler.dispatchPending();
 
@@ -95,7 +94,7 @@ class MqOutboxSchedulerTest {
                 outbox(2L, "approval-event", "2", "{}")));
 
         doThrow(new RuntimeException("broker down"))
-                .when(approvalEventProducer).send(any(), any(), any(), any());
+                .when(approvalEventProducer).send(any(), any(), any());
 
         scheduler.dispatchPending();
 

@@ -165,7 +165,6 @@ CREATE TABLE `notification` (
 CREATE TABLE `mq_outbox` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
     `topic`           VARCHAR(64)  NOT NULL COMMENT '消息主题',
-    `tag`             VARCHAR(64)  DEFAULT NULL COMMENT '消息标签，消费端可按 Tag 过滤',
     `msg_key`         VARCHAR(128) DEFAULT NULL COMMENT '消息业务键（当前取 taskId），供控制台按业务主键反查',
     `body`            TEXT         NOT NULL COMMENT '消息体快照：事务内序列化完成的 JSON，不接受扫表时回查',
     `status`          TINYINT      NOT NULL DEFAULT 0 COMMENT '0待发送 1已发送 2发送失败（死信）',

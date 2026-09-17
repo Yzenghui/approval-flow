@@ -31,29 +31,20 @@ class ApprovalEventProducerTest {
     }
 
     @Test
-    @DisplayName("投递：topic / tag / key / body 原样透传给 Broker")
-    void shouldPassThroughTopicTagKeyAndBody() throws Exception {
+    @DisplayName("投递：topic / key / body 原样透传给 Broker")
+    void shouldPassThroughTopicKeyAndBody() throws Exception {
         when(producer.send(any(Message.class))).thenReturn(sendOk());
 
         String body = "{\"taskId\":1,\"type\":2}";
-        eventProducer.send("approval-event", "TAG-A", "1", body);
+        eventProducer.send("approval-event", "1", body);
 
         ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
         verify(producer).send(captor.capture());
         Message sent = captor.getValue();
 
         assertEquals("approval-event", sent.getTopic());
-        assertEquals("TAG-A", sent.getTags());
         assertEquals("1", sent.getKeys(), "key 用 taskId，供控制台按业务主键反查消息");
         assertEquals(body, new String(sent.getBody(), StandardCharsets.UTF_8));
-    }
-
-    @Test
-    @DisplayName("tag 为 null 时也能发送")
-    void shouldAllowNullTag() throws Exception {
-        when(producer.send(any(Message.class))).thenReturn(sendOk());
-
-        assertDoesNotThrow(() -> eventProducer.send("approval-event", null, "1", "{}"));
     }
 
     @Test
@@ -62,7 +53,7 @@ class ApprovalEventProducerTest {
         when(producer.send(any(Message.class))).thenThrow(new RuntimeException("broker down"));
 
         assertThrows(RuntimeException.class,
-                () -> eventProducer.send("approval-event", null, "1", "{}"));
+                () -> eventProducer.send("approval-event", "1", "{}"));
     }
 
     private SendResult sendOk() {

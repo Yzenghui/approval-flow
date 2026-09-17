@@ -51,7 +51,7 @@ public class MqOutboxScheduler {
 
         for (MqOutbox outbox : dueList) {
             try {
-                approvalEventProducer.send(outbox.getTopic(), null, outbox.getMsgKey(), outbox.getBody());
+                approvalEventProducer.send(outbox.getTopic(), outbox.getMsgKey(), outbox.getBody());
                 mqOutboxService.markSent(outbox.getId());
             } catch (Exception e) {
                 // 单条失败不中断整批

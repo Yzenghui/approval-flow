@@ -34,13 +34,12 @@ public class ApprovalEventProducer {
      * 同步发送一条消息，等 Broker 确认
      *
      * @param topic   消息主题
-     * @param tag     消息标签，可为 null
      * @param msgKey  消息业务键：RocketMQ 按 key 建索引，排查任务通知是否发出时，可在控制台按 key 精确查到
      * @param body    已完成序列化的消息体
      * @throws Exception 网络或 Broker 异常，交由调用方决定重试策略
      */
-    public void send(String topic, String tag, String msgKey, String body) throws Exception {
-        Message message = new Message(topic, tag, body.getBytes(StandardCharsets.UTF_8));
+    public void send(String topic, String msgKey, String body) throws Exception {
+        Message message = new Message(topic, body.getBytes(StandardCharsets.UTF_8));
         message.setKeys(msgKey);
 
         // 同步发送：拿到 Broker 的确认结果，便于日志留痕与排查

@@ -147,7 +147,7 @@ const handleRowClick = async (row) => {
 const jumpTo = (row) => {
   // 待办类通知跳任务处理页，其余跳申请详情
   if (row.type === 1 && row.taskId) {
-    router.push(`/task/${row.taskId}`)
+    router.push({ path: `/task/${row.taskId}`, query: { instanceId: row.instanceId } })
   } else if (row.instanceId) {
     router.push(`/instance/${row.instanceId}`)
   }

@@ -160,6 +160,25 @@ CREATE TABLE `notification` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知表';
 
 -- ======================================================
+-- 9. 本地消息表（mq_outbox）
+-- ======================================================
+CREATE TABLE `mq_outbox` (
+    `id`              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `topic`           VARCHAR(64)  NOT NULL COMMENT '消息主题',
+    `tag`             VARCHAR(64)  DEFAULT NULL COMMENT '消息标签，消费端可按 Tag 过滤',
+    `msg_key`         VARCHAR(128) DEFAULT NULL COMMENT '消息业务键（当前取 taskId），供控制台按业务主键反查',
+    `body`            TEXT         NOT NULL COMMENT '消息体快照：事务内序列化完成的 JSON，不接受扫表时回查',
+    `status`          TINYINT      NOT NULL DEFAULT 0 COMMENT '0待发送 1已发送 2发送失败（死信）',
+    `retry_count`     INT          NOT NULL DEFAULT 0 COMMENT '已重试次数',
+    `next_retry_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '下次重试时间，未到时间不被扫描（退避重试）',
+    `error_msg`       VARCHAR(500) DEFAULT NULL COMMENT '最近一次发送失败原因',
+    `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_status_retry` (`status`, `next_retry_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='本地消息表';
+
+-- ======================================================
 -- 初始化角色数据
 -- ======================================================
 INSERT INTO `role` (`id`, `code`, `name`, `level`, `status`, `create_time`, `update_time`) VALUES

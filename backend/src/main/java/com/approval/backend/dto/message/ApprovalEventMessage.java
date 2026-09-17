@@ -8,9 +8,10 @@ import lombok.Data;
  * 一个对象承担两个角色：
  * </p>
  * <ol>
- *   <li><b>Spring 事务事件</b>：业务代码在事务内 publishEvent 登记事件</li>
- *   <li><b>MQ 消息体</b>：{@code ApprovalEventProducer} 在事务提交后
- *       把它序列化成 JSON 投递到 approval-event 主题</li>
+ *   <li><b>本地消息表记录</b>：业务代码在事务内经 {@code NotificationEventPublisher}
+ *       把它序列化成 JSON 存入 mq_outbox，与业务写库同事务提交</li>
+ *   <li><b>MQ 消息体</b>：{@code MqOutboxScheduler} 扫表补发时把该 JSON 原样
+ *       投递到 approval-event 主题</li>
  * </ol>
  */
 @Data

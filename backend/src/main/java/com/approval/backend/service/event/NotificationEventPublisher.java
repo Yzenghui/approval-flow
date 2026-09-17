@@ -3,15 +3,14 @@ package com.approval.backend.service.event;
 import com.approval.backend.dto.message.ApprovalEventMessage;
 import com.approval.backend.entity.ProcessInstance;
 import com.approval.backend.entity.Task;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 /**
  * 通知事件发布器
  * <p>
- * 把审批过程中的业务动作翻译成 {@link ApprovalEventMessage} 并登记到 Spring 事件总线。
- * 本类只决定"发什么通知、发给谁"，投递时机与 MQ 投递由 {@code ApprovalEventProducer} 负责。
+ * 把审批过程中的业务动作翻译成 {@link ApprovalEventMessage} 并登记到本地消息表。
+ * 本类只决定"发什么通知、发给谁"，真正投递 MQ 由 {@code MqOutboxScheduler} 扫表驱动。
  * </p>
  * <p>
  * 三类通知的收件人规则：
@@ -25,10 +24,10 @@ import org.springframework.util.StringUtils;
 @Component
 public class NotificationEventPublisher {
 
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final MqOutboxService mqOutboxService;
 
-    public NotificationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        this.applicationEventPublisher = applicationEventPublisher;
+    public NotificationEventPublisher(MqOutboxService mqOutboxService) {
+        this.mqOutboxService = mqOutboxService;
     }
 
     /**
@@ -72,10 +71,10 @@ public class NotificationEventPublisher {
     }
 
     /**
-     * 组装事件并登记到 Spring 事件总线
+     * 组装事件并登记到本地消息表
      * <p>
-     * 只登记不投递：真正发 MQ 的时机由 {@code @TransactionalEventListener(AFTER_COMMIT)} 控制，
-     * 保证事务回滚时通知不会发出去。
+     * 写表发生在调用方的事务内：业务回滚则登记一并回滚，
+     * 业务提交即意味着消息已被持久化，之后由扫表任务补发。
      * </p>
      */
     private void publish(ProcessInstance processInstance, Task task, int type, Long recipientId, String content) {
@@ -86,6 +85,6 @@ public class NotificationEventPublisher {
         eventMessage.setRecipientId(recipientId);
         eventMessage.setContent(content);
 
-        applicationEventPublisher.publishEvent(eventMessage);
+        mqOutboxService.save(eventMessage);
     }
 }

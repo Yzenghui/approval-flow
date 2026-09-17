@@ -5,6 +5,8 @@ import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
 import com.approval.backend.mq.ApprovalEventProducer;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,9 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.PayloadApplicationEvent;
-import org.springframework.test.context.event.ApplicationEvents;
-import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,16 +23,15 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 通知生产端集成测试
  * <p>
- * 验证的是"业务动作在正确的时机登记了正确的事件"，
- * 落库交给 MQ 消费端异步完成，依赖 RocketMQ 真实投递，既慢又不稳定，因此不放进断言范围。
+ * 验证的是"业务动作在正确的时机登记了正确的事件"，即本地消息表里落了对应的记录，
+ * 落库为通知由 MQ 消费端异步完成，依赖 RocketMQ 真实投递，既慢又不稳定，因此不放进断言范围。
  * </p>
  * <p>
- * {@code ApprovalEventMessage} 不是 {@code ApplicationEvent} 的子类，
- * Spring 发布时会把它包装成 {@link PayloadApplicationEvent}，所以断言前要先剥掉这层包装。
+ * 业务事务一旦提交，mq_outbox 里就应有这条消息的快照（body 为事务内序列化好的 JSON），
+ * 所以断言直接查表并反序列化还原，不经过任何异步环节。
  * </p>
  */
 @SpringBootTest
-@RecordApplicationEvents
 @DisplayName("通知生产端")
 class TaskNotificationIntegrationTest {
 
@@ -47,9 +45,9 @@ class TaskNotificationIntegrationTest {
     private static final Long NEXT_APPROVER_ID = 3L;
 
     /**
-     * 替换真实生产者，避免测试真的把消息投到 RocketMQ。
+     * 替换真实生产者，避免扫表任务真的把消息投到 RocketMQ。
      * 消费端是异步落库，落库时机与 {@code tearDown} 的数据清理互相竞争，双方会因外键约束互相打断；
-     * 而本用例要验证的只是"业务动作是否登记了事件"，止步于 Spring 事件总线即可。
+     * 而本用例要验证的只是"业务动作是否登记了本地消息"，止步于 mq_outbox 表即可。
      */
     @MockBean
     private ApprovalEventProducer approvalEventProducer;
@@ -69,6 +67,11 @@ class TaskNotificationIntegrationTest {
     private ApprovalRecordMapper approvalRecordMapper;
     @Autowired
     private NotificationMapper notificationMapper;
+    @Autowired
+    private MqOutboxMapper mqOutboxMapper;
+
+    /** 消息体是本模块自己序列化的简单 POJO，无需容器定制的 ObjectMapper */
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final List<Long> createdNodeIds = new ArrayList<>();
 
@@ -111,8 +114,17 @@ class TaskNotificationIntegrationTest {
 
     @AfterEach
     void tearDown() {
-        // 逆着外键依赖清理：notification 的 instance / task 外键都是 RESTRICT
         if (instanceId != null) {
+            // 清理本地消息表，残留的待发行会被扫表任务投递，消费端落库将撞 notification 的 RESTRICT 外键
+            List<String> taskKeys = taskMapper.selectList(new LambdaQueryWrapper<Task>()
+                            .eq(Task::getInstanceId, instanceId))
+                    .stream().map(task -> String.valueOf(task.getId())).toList();
+            if (!taskKeys.isEmpty()) {
+                mqOutboxMapper.delete(new LambdaQueryWrapper<MqOutbox>()
+                        .in(MqOutbox::getMsgKey, taskKeys));
+            }
+
+            // 逆着外键依赖清理：notification 的 instance / task 外键都是 RESTRICT
             notificationMapper.delete(new LambdaQueryWrapper<Notification>()
                     .eq(Notification::getInstanceId, instanceId));
             taskMapper.delete(new LambdaQueryWrapper<Task>()
@@ -129,12 +141,12 @@ class TaskNotificationIntegrationTest {
 
     @Test
     @DisplayName("通过且存在下一节点：只登记一条待办通知给下一节点审批人")
-    void approveWithNextNodeShouldPublishTodo(ApplicationEvents events) {
+    void approveWithNextNodeShouldPublishTodo() {
         insertNode(2, "总监审批", NEXT_APPROVER_ID);
 
         taskService.approveTask(taskId, "同意", APPROVER_ID);
 
-        List<ApprovalEventMessage> messages = messagesOf(events);
+        List<ApprovalEventMessage> messages = messagesOf();
         assertEquals(1, messages.size(), "有下一节点时只应发待办通知");
 
         ApprovalEventMessage todo = messages.get(0);
@@ -154,10 +166,10 @@ class TaskNotificationIntegrationTest {
 
     @Test
     @DisplayName("通过且无下一节点：只登记一条通过通知给发起人")
-    void approveWithoutNextNodeShouldPublishApproved(ApplicationEvents events) {
+    void approveWithoutNextNodeShouldPublishApproved() {
         taskService.approveTask(taskId, "同意", APPROVER_ID);
 
-        List<ApprovalEventMessage> messages = messagesOf(events);
+        List<ApprovalEventMessage> messages = messagesOf();
         assertEquals(1, messages.size(), "流程结束时只应发通过通知");
 
         ApprovalEventMessage approved = messages.get(0);
@@ -169,10 +181,10 @@ class TaskNotificationIntegrationTest {
 
     @Test
     @DisplayName("驳回：只登记一条驳回通知给发起人，内容含审批意见")
-    void rejectShouldPublishReject(ApplicationEvents events) {
+    void rejectShouldPublishReject() {
         taskService.rejectTask(taskId, "材料不全", APPROVER_ID);
 
-        List<ApprovalEventMessage> messages = messagesOf(events);
+        List<ApprovalEventMessage> messages = messagesOf();
         assertEquals(1, messages.size());
 
         ApprovalEventMessage reject = messages.get(0);
@@ -186,8 +198,8 @@ class TaskNotificationIntegrationTest {
     private Long insertNode(int nodeOrder, String nodeName, Long assigneeId) {
         ProcessNode node = new ProcessNode();
         node.setDefinitionId(definitionId);
-        node.setNodeName(nodeName);
         node.setNodeOrder(nodeOrder);
+        node.setNodeName(nodeName);
         node.setAssigneeType("USER");
         node.setAssigneeExpr(String.valueOf(assigneeId));
         processNodeMapper.insert(node);
@@ -196,15 +208,29 @@ class TaskNotificationIntegrationTest {
     }
 
     /**
-     * 把记录到的事件剥成 {@link ApprovalEventMessage}，
-     * 忽略 Spring 上下文自己发的其他事件
+     * 取出本流程实例登记到本地消息表的所有事件，
+     * 按 msg_key（任务ID）过滤后把 body 反序列化还原成 {@link ApprovalEventMessage}。
      */
-    private List<ApprovalEventMessage> messagesOf(ApplicationEvents events) {
-        return events.stream()
-                .filter(PayloadApplicationEvent.class::isInstance)
-                .map(event -> ((PayloadApplicationEvent<?>) event).getPayload())
-                .filter(ApprovalEventMessage.class::isInstance)
-                .map(ApprovalEventMessage.class::cast)
+    private List<ApprovalEventMessage> messagesOf() {
+        List<String> taskKeys = taskMapper.selectList(new LambdaQueryWrapper<Task>()
+                        .eq(Task::getInstanceId, instanceId))
+                .stream().map(task -> String.valueOf(task.getId())).toList();
+        if (taskKeys.isEmpty()) {
+            return List.of();
+        }
+        return mqOutboxMapper.selectList(new LambdaQueryWrapper<MqOutbox>()
+                        .in(MqOutbox::getMsgKey, taskKeys))
+                .stream()
+                .map(MqOutbox::getBody)
+                .map(this::parseBody)
                 .toList();
+    }
+
+    private ApprovalEventMessage parseBody(String body) {
+        try {
+            return objectMapper.readValue(body, ApprovalEventMessage.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("本地消息表 body 不是合法的审批事件 JSON: " + body, e);
+        }
     }
 }

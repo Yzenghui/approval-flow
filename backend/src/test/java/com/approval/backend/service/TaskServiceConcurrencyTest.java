@@ -56,6 +56,8 @@ class TaskServiceConcurrencyTest {
     private ApprovalRecordMapper approvalRecordMapper;
     @Autowired
     private NotificationMapper notificationMapper;
+    @Autowired
+    private MqOutboxMapper mqOutboxMapper;
 
     private Long testDefinitionId;
     private Long testNodeId;
@@ -107,16 +109,24 @@ class TaskServiceConcurrencyTest {
         if (testInstanceId != null) {
             // 通知必须最先删：fk_notification_instance 与 fk_notification_task 都是 RESTRICT
             notificationMapper.delete(
-                new LambdaQueryWrapper<Notification>()
-                    .eq(Notification::getInstanceId, testInstanceId));
+                    new LambdaQueryWrapper<Notification>()
+                            .eq(Notification::getInstanceId, testInstanceId));
+            // 清理本地消息表，残留的待发行会被扫表任务投递，消费端落库将撞 notification 的 RESTRICT 外键
+            List<String> taskKeys = taskMapper.selectList(
+                    new LambdaQueryWrapper<Task>().eq(Task::getInstanceId, testInstanceId))
+                    .stream().map(task -> String.valueOf(task.getId())).toList();
+            if (!taskKeys.isEmpty()) {
+                mqOutboxMapper.delete(
+                        new LambdaQueryWrapper<MqOutbox>().in(MqOutbox::getMsgKey, taskKeys));
+            }
         }
         if (testTaskId != null) {
             taskMapper.deleteById(testTaskId);
         }
         if (testInstanceId != null) {
             approvalRecordMapper.delete(
-                new LambdaQueryWrapper<ApprovalRecord>()
-                    .eq(ApprovalRecord::getInstanceId, testInstanceId));
+                    new LambdaQueryWrapper<ApprovalRecord>()
+                            .eq(ApprovalRecord::getInstanceId, testInstanceId));
             processInstanceMapper.deleteById(testInstanceId);
         }
         if (testNodeId != null) {
@@ -176,8 +186,7 @@ class TaskServiceConcurrencyTest {
                 new LambdaQueryWrapper<ApprovalRecord>()
                         .eq(ApprovalRecord::getInstanceId, testInstanceId)
                         .eq(ApprovalRecord::getTaskId, testTaskId)
-                        .eq(ApprovalRecord::getAction, 1)
-        );
+                        .eq(ApprovalRecord::getAction, 1));
         assertEquals(1, recordCount, "只有一条审批记录");
     }
 
@@ -230,8 +239,7 @@ class TaskServiceConcurrencyTest {
                 new LambdaQueryWrapper<ApprovalRecord>()
                         .eq(ApprovalRecord::getInstanceId, testInstanceId)
                         .eq(ApprovalRecord::getTaskId, testTaskId)
-                        .eq(ApprovalRecord::getAction, 2)
-        );
+                        .eq(ApprovalRecord::getAction, 2));
         assertEquals(1, recordCount, "只有一条驳回记录");
     }
 }

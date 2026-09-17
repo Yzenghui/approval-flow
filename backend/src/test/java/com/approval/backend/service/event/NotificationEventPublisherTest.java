@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.context.ApplicationEventPublisher;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -16,19 +15,19 @@ import static org.mockito.Mockito.*;
  * 通知事件发布器单元测试（纯单测，不启动 Spring）
  * <p>
  * 本例只关心"发什么通知、发给谁、内容长什么样"，
- * 投递时机与 MQ 落库属于其他层的职责，不在本用例范围内。
+ * 消息如何落库、何时投递 MQ 属于 {@code MqOutboxService} 与扫表任务的职责，不在本用例范围内。
  * </p>
  */
 @DisplayName("通知事件发布器")
 class NotificationEventPublisherTest {
 
-    private ApplicationEventPublisher applicationEventPublisher;
+    private MqOutboxService mqOutboxService;
     private NotificationEventPublisher notificationEventPublisher;
 
     @BeforeEach
     void setUp() {
-        applicationEventPublisher = mock(ApplicationEventPublisher.class);
-        notificationEventPublisher = new NotificationEventPublisher(applicationEventPublisher);
+        mqOutboxService = mock(MqOutboxService.class);
+        notificationEventPublisher = new NotificationEventPublisher(mqOutboxService);
     }
 
     @Test
@@ -83,7 +82,7 @@ class NotificationEventPublisherTest {
      */
     private ApprovalEventMessage captureSingleEvent() {
         ArgumentCaptor<ApprovalEventMessage> captor = ArgumentCaptor.forClass(ApprovalEventMessage.class);
-        verify(applicationEventPublisher, times(1)).publishEvent(captor.capture());
+        verify(mqOutboxService, times(1)).save(captor.capture());
         return captor.getValue();
     }
 

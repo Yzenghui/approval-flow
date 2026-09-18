@@ -48,11 +48,22 @@ class ApprovalEventConsumerTest {
     }
 
     @Test
-    @DisplayName("非审批事件消息：跳过并 ack，不反复重试")
-    void shouldSkipAndAckWhenBodyIsNotJson() {
+    @DisplayName("破损消息：返回 RECONSUME_LATER，交回 Broker 直至进入死信队列，不静默确认")
+    void shouldReconsumeWhenBodyIsNotJson() {
         ConsumeConcurrentlyStatus status = consumer.consumeMessage(List.of(messageOf("i-am-not-json")), null);
 
-        assertEquals(ConsumeConcurrentlyStatus.CONSUME_SUCCESS, status);
+        assertEquals(ConsumeConcurrentlyStatus.RECONSUME_LATER, status);
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    @DisplayName("JSON 合法但字段类型错误：同样视为破损消息重投，不静默确认")
+    void shouldReconsumeWhenFieldTypeMismatched() {
+        String body = "{\"instanceId\":10,\"taskId\":\"not-a-number\"}";
+
+        ConsumeConcurrentlyStatus status = consumer.consumeMessage(List.of(messageOf(body)), null);
+
+        assertEquals(ConsumeConcurrentlyStatus.RECONSUME_LATER, status);
         verifyNoInteractions(notificationService);
     }
 

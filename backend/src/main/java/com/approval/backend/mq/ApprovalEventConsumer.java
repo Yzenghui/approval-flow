@@ -27,6 +27,9 @@ import java.util.List;
  *   <li>{@code CONSUME_SUCCESS}：相当于手动 ack，Broker 认为该消息处理完毕</li>
  *   <li>{@code RECONSUME_LATER}：Broker 稍后按重试策略再次投递</li>
  * </ul>
+ * <p>
+ * 只有"确实处理完了"才返回 ack，解析失败（破损消息）和落库失败一样返回重试。
+ * </p>
  */
 @Slf4j
 @Component
@@ -54,9 +57,10 @@ public class ApprovalEventConsumer implements MessageListenerConcurrently {
                 ApprovalEventMessage eventMessage = objectMapper.readValue(body, ApprovalEventMessage.class);
                 notificationService.save(eventMessage);
             } catch (JsonProcessingException e) {
-                // 不是审批事件的消息，
-                // 确认掉即可，没必要反复重试
-                log.warn("非审批事件消息，已跳过: msgId={}, body={}", message.getMsgId(), body);
+                // 破损消息不能 ack，一旦确认，这条消息就会从系统里永久消失。
+                // 应该交回 Broker 重试，超过最大重试次数后进入 %DLQ% 消费者组
+                log.error("审批事件解析失败，交回 Broker 重试: msgId={}, body={}", message.getMsgId(), body, e);
+                return ConsumeConcurrentlyStatus.RECONSUME_LATER;
             } catch (Exception e) {
                 // 落库失败（例如数据库暂时不可用）属于可恢复问题，
                 // 返回重试让 Broker 稍后再投一次，而不是把通知悄悄丢掉

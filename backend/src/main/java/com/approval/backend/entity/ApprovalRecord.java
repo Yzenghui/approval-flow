@@ -1,5 +1,6 @@
 package com.approval.backend.entity;
 
+import com.approval.backend.common.constant.ApprovalAction;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
@@ -17,7 +18,7 @@ public class ApprovalRecord {
     private Long instanceId;
     private Long operatorId;
     private Long taskId;
-    /** 操作类型：0提交 1通过 2驳回 3撤回 4修改重提 */
+    /** 操作类型：SUBMIT(0)提交 APPROVE(1)通过 REJECT(2)驳回 WITHDRAW(3)撤回 RESUBMIT(4)修改重提，取值见 {@link ApprovalAction} */
     private Integer action;
     private String remark;
 

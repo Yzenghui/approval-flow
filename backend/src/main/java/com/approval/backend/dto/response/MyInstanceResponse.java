@@ -1,5 +1,6 @@
 package com.approval.backend.dto.response;
 
+import com.approval.backend.common.constant.ProcessInstanceStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -15,7 +16,7 @@ public class MyInstanceResponse {
     private Long initiatorId;
     private String formData;
     private Integer submitCount;
-    /** 状态：0草稿 1审批中 2通过 3驳回 4撤回 */
+    /** 状态：DRAFT(0)草稿 APPROVING(1)审批中 APPROVED(2)通过 REJECTED(3)驳回 WITHDRAWN(4)撤回，取值见 {@link ProcessInstanceStatus} */
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

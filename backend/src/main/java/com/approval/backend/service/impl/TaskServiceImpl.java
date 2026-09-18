@@ -2,6 +2,10 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.common.constant.ApprovalAction;
+import com.approval.backend.common.constant.EnableStatus;
+import com.approval.backend.common.constant.ProcessInstanceStatus;
+import com.approval.backend.common.constant.TaskStatus;
 import com.approval.backend.service.cache.ProcessCacheHelper;
 import com.approval.backend.common.RedisLockUtil;
 import com.approval.backend.dto.response.CompletedTaskResponse;
@@ -73,7 +77,7 @@ public class TaskServiceImpl implements TaskService {
         Page<Task> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
                 .eq(Task::getAssigneeId, userId)
-                .eq(Task::getStatus, 0)
+                .eq(Task::getStatus, TaskStatus.PENDING)
                 .orderByDesc(Task::getCreateTime);
         Page<Task> taskPage = taskMapper.selectPage(page, queryWrapper);
 
@@ -140,7 +144,7 @@ public class TaskServiceImpl implements TaskService {
         try {
             LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
                     .eq(Task::getId, taskId)
-                    .eq(Task::getStatus, 0);
+                    .eq(Task::getStatus, TaskStatus.PENDING);
             Task task = taskMapper.selectOne(queryWrapper);
             if (task == null) {
                 throw new BusinessException("任务不存在或已处理");
@@ -152,8 +156,8 @@ public class TaskServiceImpl implements TaskService {
 
             int updated = taskMapper.update(null, new LambdaUpdateWrapper<Task>()
                     .eq(Task::getId, taskId)
-                    .eq(Task::getStatus, 0)
-                    .set(Task::getStatus, 1)
+                    .eq(Task::getStatus, TaskStatus.PENDING)
+                    .set(Task::getStatus, TaskStatus.COMPLETED)
                     .set(Task::getUpdateTime, LocalDateTime.now()));
             if (updated == 0) {
                 throw new BusinessException("任务正在处理中，请勿重复提交");
@@ -163,7 +167,7 @@ public class TaskServiceImpl implements TaskService {
             if (!hasNext) {
                 processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
                         .eq(ProcessInstance::getId, task.getInstanceId())
-                        .set(ProcessInstance::getStatus, 2)
+                        .set(ProcessInstance::getStatus, ProcessInstanceStatus.APPROVED)
                         .set(ProcessInstance::getUpdateTime, LocalDateTime.now()));
 
                 // 没有下一个节点即流程结束，通知发起人审批通过
@@ -175,7 +179,7 @@ public class TaskServiceImpl implements TaskService {
             approvalRecord.setInstanceId(task.getInstanceId());
             approvalRecord.setOperatorId(userId);
             approvalRecord.setTaskId(task.getId());
-            approvalRecord.setAction(1);
+            approvalRecord.setAction(ApprovalAction.APPROVE);
             approvalRecord.setRemark(remark);
             approvalRecordMapper.insert(approvalRecord);
         } finally {
@@ -203,7 +207,7 @@ public class TaskServiceImpl implements TaskService {
         try {
             LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
                     .eq(Task::getId, taskId)
-                    .eq(Task::getStatus, 0);
+                    .eq(Task::getStatus, TaskStatus.PENDING);
             Task task = taskMapper.selectOne(queryWrapper);
             if (task == null) {
                 throw new BusinessException("任务不存在或已处理");
@@ -215,8 +219,8 @@ public class TaskServiceImpl implements TaskService {
 
             int updated = taskMapper.update(null, new LambdaUpdateWrapper<Task>()
                     .eq(Task::getId, taskId)
-                    .eq(Task::getStatus, 0)
-                    .set(Task::getStatus, 1)
+                    .eq(Task::getStatus, TaskStatus.PENDING)
+                    .set(Task::getStatus, TaskStatus.COMPLETED)
                     .set(Task::getUpdateTime, LocalDateTime.now()));
             if (updated == 0) {
                 throw new BusinessException("任务正在处理中，请勿重复提交");
@@ -224,14 +228,14 @@ public class TaskServiceImpl implements TaskService {
 
             processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
                     .eq(ProcessInstance::getId, task.getInstanceId())
-                    .set(ProcessInstance::getStatus, 3)
+                    .set(ProcessInstance::getStatus, ProcessInstanceStatus.REJECTED)
                     .set(ProcessInstance::getUpdateTime, LocalDateTime.now()));
 
             ApprovalRecord approvalRecord = new ApprovalRecord();
             approvalRecord.setInstanceId(task.getInstanceId());
             approvalRecord.setOperatorId(userId);
             approvalRecord.setTaskId(task.getId());
-            approvalRecord.setAction(2);
+            approvalRecord.setAction(ApprovalAction.REJECT);
             approvalRecord.setRemark(remark);
             approvalRecordMapper.insert(approvalRecord);
 
@@ -256,7 +260,7 @@ public class TaskServiceImpl implements TaskService {
         Page<Task> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<Task> queryWrapper = new LambdaQueryWrapper<Task>()
                 .eq(Task::getAssigneeId, userId)
-                .eq(Task::getStatus, 1)
+                .eq(Task::getStatus, TaskStatus.COMPLETED)
                 .orderByDesc(Task::getUpdateTime);
         Page<Task> taskPage = taskMapper.selectPage(page, queryWrapper);
 
@@ -379,13 +383,13 @@ public class TaskServiceImpl implements TaskService {
                 Long roleId = role.getId();
                 currentUser = userMapper.selectOne(new LambdaQueryWrapper<User>()
                         .eq(User::getRoleId, roleId)
-                        .eq(User::getStatus, 1)
+                        .eq(User::getStatus, EnableStatus.ENABLED)
                         .ne(User::getId, processInstance.getInitiatorId())
                         .orderByAsc(User::getId)
                         .last("LIMIT 1"));
             }
 
-            if (currentUser == null || currentUser.getStatus() != 1) {
+            if (currentUser == null || currentUser.getStatus() != EnableStatus.ENABLED) {
                 throw new BusinessException(400, "节点【" + processNode.getNodeName() + "】审批人无法确定");
             }
 
@@ -395,7 +399,7 @@ public class TaskServiceImpl implements TaskService {
             task.setNodeName(processNode.getNodeName());
             task.setAssigneeId(currentUser.getId());
             task.setSubmitRound(processInstance.getSubmitCount());
-            task.setStatus(0);
+            task.setStatus(TaskStatus.PENDING);
             taskMapper.insert(task);
 
             // 任务落库后主键才回填，通知该节点的审批人

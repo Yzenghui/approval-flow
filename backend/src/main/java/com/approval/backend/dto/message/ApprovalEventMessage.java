@@ -32,7 +32,7 @@ public class ApprovalEventMessage {
     /** 触发本次通知的任务ID，与 type 共同构成消费端幂等键（uk_task_type） */
     private Long taskId;
 
-    /** 通知类型：0驳回 1待办 2通过 */
+    /** 通知类型：TYPE_REJECT(0)驳回 TYPE_TODO(1)待办 TYPE_APPROVED(2)通过 */
     private Integer type;
 
     /** 收件人ID：驳回/通过为发起人，待办为审批人 */

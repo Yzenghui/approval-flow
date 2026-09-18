@@ -3,6 +3,7 @@ package com.approval.backend.service.impl;
 import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.BusinessException;
+import com.approval.backend.common.constant.EnableStatus;
 import com.approval.backend.dto.request.LoginRequest;
 import com.approval.backend.dto.request.RegisterRequest;
 import com.approval.backend.dto.response.LoginResponse;
@@ -70,7 +71,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(400, "用户名或密码错误，您还有" + remaining + "次尝试机会");
         }
 
-        if (user.getStatus() != null && user.getStatus() != 1) {
+        if (user.getStatus() != null && user.getStatus() != EnableStatus.ENABLED) {
             throw new BusinessException(403, "账号已被禁用，请联系管理员");
         }
 
@@ -141,7 +142,7 @@ public class AuthServiceImpl implements AuthService {
 
         user.setRoleId(roleId);
         user.setManagerId(null);
-        user.setStatus(1);
+        user.setStatus(EnableStatus.ENABLED);
 
         userMapper.insert(user);
 

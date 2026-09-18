@@ -8,6 +8,8 @@ import com.approval.backend.dto.request.CreateProcessRequest;
 import com.approval.backend.dto.response.ProcessDefinitionResponse;
 import com.approval.backend.entity.ProcessDefinition;
 import com.approval.backend.entity.ProcessInstance;
+import com.approval.backend.common.constant.EnableStatus;
+import com.approval.backend.common.constant.ProcessInstanceStatus;
 import com.approval.backend.entity.ProcessNode;
 import com.approval.backend.entity.Role;
 import com.approval.backend.mapper.ProcessDefinitionMapper;
@@ -143,7 +145,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinition.setName(createProcessRequest.getName());
         processDefinition.setVersion(1);
         processDefinition.setRoleCode(createProcessRequest.getRoleCode());
-        processDefinition.setStatus(1);
+        processDefinition.setStatus(EnableStatus.ENABLED);
         processDefinition.setFormSchema(createProcessRequest.getFormSchema());
         processDefinitionMapper.insert(processDefinition);
 
@@ -183,7 +185,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         long count = processInstanceMapper.selectCount(new LambdaQueryWrapper<ProcessInstance>()
                 .eq(ProcessInstance::getDefinitionId, id)
-                .eq(ProcessInstance::getStatus, 1));
+                .eq(ProcessInstance::getStatus, ProcessInstanceStatus.APPROVING));
         if (count > 0) {
             throw new BusinessException(400, "当前流程有进行中的审批，无法编辑");
         }
@@ -260,7 +262,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         processDefinitionMapper.update(null, new LambdaUpdateWrapper<ProcessDefinition>()
                 .eq(ProcessDefinition::getId, id)
-                .set(ProcessDefinition::getStatus, 1)
+                .set(ProcessDefinition::getStatus, EnableStatus.ENABLED)
                 .set(ProcessDefinition::getUpdateTime, LocalDateTime.now())
         );
 
@@ -282,7 +284,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         processDefinitionMapper.update(null, new LambdaUpdateWrapper<ProcessDefinition>()
                 .eq(ProcessDefinition::getId, id)
-                .set(ProcessDefinition::getStatus, 0)
+                .set(ProcessDefinition::getStatus, EnableStatus.DISABLED)
                 .set(ProcessDefinition::getUpdateTime, LocalDateTime.now())
         );
 

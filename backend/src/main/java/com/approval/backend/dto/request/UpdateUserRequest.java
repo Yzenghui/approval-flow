@@ -22,6 +22,6 @@ public class UpdateUserRequest {
     @NotNull(message = "状态不能为空")
     @Min(value = 0, message = "状态只能为0或1")
     @Max(value = 1, message = "状态只能为0或1")
-    /** 状态：0禁用 1启用 */
+    /** 状态：DISABLED(0)禁用 ENABLED(1)启用，取值见 {@link EnableStatus} */
     private Integer status;
 }

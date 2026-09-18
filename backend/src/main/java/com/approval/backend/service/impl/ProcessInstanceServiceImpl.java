@@ -2,6 +2,10 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.common.constant.ApprovalAction;
+import com.approval.backend.common.constant.EnableStatus;
+import com.approval.backend.common.constant.ProcessInstanceStatus;
+import com.approval.backend.common.constant.TaskStatus;
 import com.approval.backend.service.cache.ProcessCacheHelper;
 import com.approval.backend.dto.request.CreateDraftRequest;
 import com.approval.backend.dto.request.SubmitApplicationRequest;
@@ -78,7 +82,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
         Page<ProcessDefinition> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<ProcessDefinition> wrapper = new LambdaQueryWrapper<ProcessDefinition>()
-                .eq(ProcessDefinition::getStatus, 1)
+                .eq(ProcessDefinition::getStatus, EnableStatus.ENABLED)
                 .and(w -> w
                         .eq(ProcessDefinition::getRoleCode, roleCode)
                         .or()
@@ -119,7 +123,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
         ProcessDefinition processDefinition = processDefinitionMapper.selectById(definitionId);
         if (processDefinition == null
-                || !processDefinition.getStatus().equals(1)
+                || !processDefinition.getStatus().equals(EnableStatus.ENABLED)
                 || (processDefinition.getRoleCode() != null
                 && !processDefinition.getRoleCode().equals(roleMapper.selectRoleCodeByUserId(userId)))) {
             throw new BusinessException(400, "流程不存在或已禁用");
@@ -145,7 +149,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     public SubmitApplicationResponse submitApplication(SubmitApplicationRequest submitApplicationRequest, Long userId) {
         ProcessDefinition existingProcess = processDefinitionMapper.selectOne(new LambdaQueryWrapper<ProcessDefinition>()
                 .eq(ProcessDefinition::getId, submitApplicationRequest.getDefinitionId())
-                .eq(ProcessDefinition::getStatus, 1)
+                .eq(ProcessDefinition::getStatus, EnableStatus.ENABLED)
         );
         if (existingProcess == null) {
             throw new BusinessException(400, "流程不存在或已禁用");
@@ -157,7 +161,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         processInstance.setInitiatorId(userId);
         processInstance.setFormData(submitApplicationRequest.getFormData());
         processInstance.setSubmitCount(1);
-        processInstance.setStatus(1);
+        processInstance.setStatus(ProcessInstanceStatus.APPROVING);
         processInstanceMapper.insert(processInstance);
 
         startApprovalProcess(processInstance, existingProcess);
@@ -166,7 +170,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         record.setInstanceId(processInstance.getId());
         record.setOperatorId(processInstance.getInitiatorId());
         record.setTaskId(null);
-        record.setAction(0);
+        record.setAction(ApprovalAction.SUBMIT);
         record.setRemark(null);
         approvalRecordMapper.insert(record);
 
@@ -187,7 +191,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     public CreateDraftResponse createDraft(CreateDraftRequest createDraftRequest, Long userId) {
         ProcessDefinition existingProcess = processDefinitionMapper.selectOne(new LambdaQueryWrapper<ProcessDefinition>()
                 .eq(ProcessDefinition::getId, createDraftRequest.getDefinitionId())
-                .eq(ProcessDefinition::getStatus, 1)
+                .eq(ProcessDefinition::getStatus, EnableStatus.ENABLED)
         );
         if (existingProcess == null) {
             throw new BusinessException(400, "流程不存在或已禁用");
@@ -199,7 +203,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         processInstance.setInitiatorId(userId);
         processInstance.setFormData(createDraftRequest.getFormData());
         processInstance.setSubmitCount(1);
-        processInstance.setStatus(0);
+        processInstance.setStatus(ProcessInstanceStatus.DRAFT);
         processInstanceMapper.insert(processInstance);
 
         CreateDraftResponse createDraftResponse = new CreateDraftResponse();
@@ -222,7 +226,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             throw new BusinessException(400, "草稿不存在");
         }
 
-        if (existingDraft.getStatus() != 0) {
+        if (existingDraft.getStatus() != ProcessInstanceStatus.DRAFT) {
             throw new BusinessException(400, "只有草稿状态可修改");
         }
 
@@ -251,7 +255,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             throw new BusinessException(400, "申请不存在");
         }
 
-        if (existingDraft.getStatus() != 0) {
+        if (existingDraft.getStatus() != ProcessInstanceStatus.DRAFT) {
             throw new BusinessException(400, "只有草稿状态可提交");
         }
 
@@ -261,7 +265,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
         ProcessDefinition existingProcess = processDefinitionMapper.selectOne(new LambdaQueryWrapper<ProcessDefinition>()
                 .eq(ProcessDefinition::getId, existingDraft.getDefinitionId())
-                .eq(ProcessDefinition::getStatus, 1)
+                .eq(ProcessDefinition::getStatus, EnableStatus.ENABLED)
         );
         if (existingProcess == null) {
             throw new BusinessException(400, "流程不存在或已禁用");
@@ -269,7 +273,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
         processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
                 .eq(ProcessInstance::getId, id)
-                .set(ProcessInstance::getStatus, 1)
+                .set(ProcessInstance::getStatus, ProcessInstanceStatus.APPROVING)
                 .set(ProcessInstance::getUpdateTime, LocalDateTime.now())
         );
 
@@ -279,7 +283,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         record.setInstanceId(existingDraft.getId());
         record.setOperatorId(existingDraft.getInitiatorId());
         record.setTaskId(null);
-        record.setAction(0);
+        record.setAction(ApprovalAction.SUBMIT);
         record.setRemark(null);
         approvalRecordMapper.insert(record);
 
@@ -299,7 +303,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             throw new BusinessException(400, "申请不存在");
         }
 
-        if (existingDraft.getStatus() != 1) {
+        if (existingDraft.getStatus() != ProcessInstanceStatus.APPROVING) {
             throw new BusinessException(400, "只有审批中的申请可撤回");
         }
 
@@ -309,14 +313,14 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
         processInstanceMapper.update(null, new LambdaUpdateWrapper<ProcessInstance>()
                 .eq(ProcessInstance::getId, id)
-                .set(ProcessInstance::getStatus, 4)
+                .set(ProcessInstance::getStatus, ProcessInstanceStatus.WITHDRAWN)
                 .set(ProcessInstance::getUpdateTime, LocalDateTime.now())
         );
 
         taskMapper.update(null, new LambdaUpdateWrapper<Task>()
                 .eq(Task::getInstanceId, id)
-                .eq(Task::getStatus, 0)
-                .set(Task::getStatus, 2)
+                .eq(Task::getStatus, TaskStatus.PENDING)
+                .set(Task::getStatus, TaskStatus.CANCELLED)
                 .set(Task::getUpdateTime, LocalDateTime.now())
         );
 
@@ -324,7 +328,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         record.setInstanceId(existingDraft.getId());
         record.setOperatorId(existingDraft.getInitiatorId());
         record.setTaskId(null);
-        record.setAction(3);
+        record.setAction(ApprovalAction.WITHDRAW);
         record.setRemark(null);
         approvalRecordMapper.insert(record);
 
@@ -345,7 +349,8 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             throw new BusinessException(400, "申请不存在");
         }
 
-        if (existingInstance.getStatus() != 3 && existingInstance.getStatus() != 4) {
+        if (existingInstance.getStatus() != ProcessInstanceStatus.REJECTED
+                && existingInstance.getStatus() != ProcessInstanceStatus.WITHDRAWN) {
             throw new BusinessException(400, "只有驳回或撤回的申请可修改重提");
         }
 
@@ -355,7 +360,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
         ProcessDefinition existingProcess = processDefinitionMapper.selectOne(new LambdaQueryWrapper<ProcessDefinition>()
                 .eq(ProcessDefinition::getId, existingInstance.getDefinitionId())
-                .eq(ProcessDefinition::getStatus, 1)
+                .eq(ProcessDefinition::getStatus, EnableStatus.ENABLED)
         );
         if (existingProcess == null) {
             throw new BusinessException(400, "流程不存在或已禁用");
@@ -365,7 +370,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .eq(ProcessInstance::getId, id)
                 .set(ProcessInstance::getFormData, formData)
                 .set(ProcessInstance::getSubmitCount, existingInstance.getSubmitCount() + 1)
-                .set(ProcessInstance::getStatus, 1)
+                .set(ProcessInstance::getStatus, ProcessInstanceStatus.APPROVING)
                 .set(ProcessInstance::getUpdateTime, LocalDateTime.now())
         );
 
@@ -376,7 +381,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         record.setInstanceId(existingInstance.getId());
         record.setOperatorId(existingInstance.getInitiatorId());
         record.setTaskId(null);
-        record.setAction(4);
+        record.setAction(ApprovalAction.RESUBMIT);
         record.setRemark(null);
         approvalRecordMapper.insert(record);
 
@@ -558,13 +563,13 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 Long roleId = role.getId();
                 currentUser = userMapper.selectOne(new LambdaQueryWrapper<User>()
                         .eq(User::getRoleId, roleId)
-                        .eq(User::getStatus, 1)
+                        .eq(User::getStatus, EnableStatus.ENABLED)
                         .ne(User::getId, processInstance.getInitiatorId())
                         .orderByAsc(User::getId)
                         .last("LIMIT 1"));
             }
 
-            if (currentUser == null || currentUser.getStatus() != 1) {
+            if (currentUser == null || currentUser.getStatus() != EnableStatus.ENABLED) {
                 throw new BusinessException(400, "节点【" + processNode.getNodeName() + "】审批人无法确定");
             }
 
@@ -574,7 +579,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             task.setNodeName(processNode.getNodeName());
             task.setAssigneeId(currentUser.getId());
             task.setSubmitRound(processInstance.getSubmitCount());
-            task.setStatus(0);
+            task.setStatus(TaskStatus.PENDING);
             taskMapper.insert(task);
 
             // 任务落库后主键才回填，通知该节点的审批人

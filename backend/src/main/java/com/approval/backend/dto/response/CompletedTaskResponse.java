@@ -1,5 +1,6 @@
 package com.approval.backend.dto.response;
 
+import com.approval.backend.common.constant.ApprovalAction;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -15,7 +16,7 @@ public class CompletedTaskResponse {
     private String nodeName;
     private String initiatorName;
     private String formData;
-    /** 操作类型：0提交 1通过 2驳回 3撤回 4修改重提 */
+    /** 操作类型：SUBMIT(0)提交 APPROVE(1)通过 REJECT(2)驳回 WITHDRAW(3)撤回 RESUBMIT(4)修改重提，取值见 {@link ApprovalAction} */
     private Integer action;
     private LocalDateTime createTime;
     private LocalDateTime completeTime;

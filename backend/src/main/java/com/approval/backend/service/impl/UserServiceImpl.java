@@ -4,6 +4,7 @@ import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.StpUtil;
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.common.constant.EnableStatus;
 import com.approval.backend.dto.request.*;
 import com.approval.backend.dto.response.CreateUserResponse;
 import com.approval.backend.entity.Role;
@@ -156,7 +157,7 @@ public class UserServiceImpl implements UserService {
         user.setRoleId(role.getId());
 
         user.setManagerId(null);
-        user.setStatus(1);
+        user.setStatus(EnableStatus.ENABLED);
 
         userMapper.insert(user);
 
@@ -212,7 +213,7 @@ public class UserServiceImpl implements UserService {
                 .set(User::getUpdateTime, LocalDateTime.now())
         );
 
-        if (oldStatus == 1 && updateUserRequest.getStatus() == 0) {
+        if (oldStatus == EnableStatus.ENABLED && updateUserRequest.getStatus() == EnableStatus.DISABLED) {
             StpUtil.kickout(id);
         }
     }

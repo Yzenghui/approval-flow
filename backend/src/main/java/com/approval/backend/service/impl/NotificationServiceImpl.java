@@ -2,6 +2,7 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.common.constant.NotificationReadStatus;
 import com.approval.backend.dto.message.ApprovalEventMessage;
 import com.approval.backend.dto.response.NotificationResponse;
 import com.approval.backend.entity.Notification;
@@ -20,10 +21,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class NotificationServiceImpl implements NotificationService {
-
-    /** is_read 取值：0未读 1已读 */
-    private static final int UNREAD = 0;
-    private static final int READ = 1;
 
     private final NotificationMapper notificationMapper;
 
@@ -51,7 +48,7 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setRecipientId(eventMessage.getRecipientId());
         notification.setType(eventMessage.getType());
         notification.setContent(eventMessage.getContent());
-        notification.setIsRead(UNREAD);
+        notification.setIsRead(NotificationReadStatus.UNREAD);
 
         try {
             notificationMapper.insert(notification);
@@ -80,7 +77,7 @@ public class NotificationServiceImpl implements NotificationService {
         LambdaQueryWrapper<Notification> queryWrapper = new LambdaQueryWrapper<Notification>()
                 .eq(Notification::getRecipientId, userId)
                 .eq(type != null, Notification::getType, type)
-                .eq(Boolean.TRUE.equals(onlyUnread), Notification::getIsRead, UNREAD)
+                .eq(Boolean.TRUE.equals(onlyUnread), Notification::getIsRead, NotificationReadStatus.UNREAD)
                 // create_time 是秒精度，同一秒落库的多条通知时间完全相同，
                 // 仅按它排序时顺序不稳定，翻页会出现漏记录或重复记录，故用 id 兜底
                 .orderByDesc(Notification::getCreateTime)
@@ -103,7 +100,7 @@ public class NotificationServiceImpl implements NotificationService {
     public Long getUnreadCount(Long userId) {
         return notificationMapper.selectCount(new LambdaQueryWrapper<Notification>()
                 .eq(Notification::getRecipientId, userId)
-                .eq(Notification::getIsRead, UNREAD));
+                .eq(Notification::getIsRead, NotificationReadStatus.UNREAD));
     }
 
     /**
@@ -123,14 +120,14 @@ public class NotificationServiceImpl implements NotificationService {
         if (notification == null || !userId.equals(notification.getRecipientId())) {
             throw new BusinessException("通知不存在");
         }
-        if (Integer.valueOf(READ).equals(notification.getIsRead())) {
+        if (Integer.valueOf(NotificationReadStatus.READ).equals(notification.getIsRead())) {
             return;
         }
 
         notificationMapper.update(null, new LambdaUpdateWrapper<Notification>()
                 .eq(Notification::getId, notificationId)
                 .eq(Notification::getRecipientId, userId)
-                .set(Notification::getIsRead, READ));
+                .set(Notification::getIsRead, NotificationReadStatus.READ));
     }
 
     /**
@@ -143,8 +140,8 @@ public class NotificationServiceImpl implements NotificationService {
     public void markAllAsRead(Long userId) {
         notificationMapper.update(null, new LambdaUpdateWrapper<Notification>()
                 .eq(Notification::getRecipientId, userId)
-                .eq(Notification::getIsRead, UNREAD)
-                .set(Notification::getIsRead, READ));
+                .eq(Notification::getIsRead, NotificationReadStatus.UNREAD)
+                .set(Notification::getIsRead, NotificationReadStatus.READ));
     }
 
     /**

@@ -3,6 +3,7 @@ package com.approval.backend.mq;
 import com.approval.backend.entity.MqOutbox;
 import com.approval.backend.service.event.MqOutboxService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "mq.outbox.enabled", havingValue = "true", matchIfMissing = true)
 public class MqOutboxScheduler {
 
     /** 单批最多取多少条，防止积压时一轮任务跑太久 */
@@ -39,9 +41,9 @@ public class MqOutboxScheduler {
     }
 
     /**
-     * 每 5 秒扫一次表，处理到期的待发送消息。
+     * 扫表间隔默认 5 秒，可用 mq.outbox.scan-interval-ms 调整。
      */
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelayString = "${mq.outbox.scan-interval-ms:5000}")
     public void dispatchPending() {
         List<MqOutbox> dueList = mqOutboxService.loadDue(BATCH_LIMIT);
         if (dueList.isEmpty()) {
@@ -52,12 +54,20 @@ public class MqOutboxScheduler {
         for (MqOutbox outbox : dueList) {
             try {
                 approvalEventProducer.send(outbox.getTopic(), outbox.getMsgKey(), outbox.getBody());
-                mqOutboxService.markSent(outbox.getId());
             } catch (Exception e) {
-                // 单条失败不中断整批
+                // 单条发送失败不中断整批，进入退避重试状态机
                 log.warn("本地消息发送失败: id={}, msgKey={}, retry={}",
                         outbox.getId(), outbox.getMsgKey(), outbox.getRetryCount() + 1, e);
                 mqOutboxService.markFailed(outbox, e);
+                continue;
+            }
+            try {
+                mqOutboxService.markSent(outbox.getId());
+            } catch (Exception e) {
+                // 消息实际已到 Broker，不能走失败状态机，否则会被当作没发出去而重复投递并累加 retry。
+                // 留在 PENDING，下一轮重扫会重发一次，用日志暴露 DB 回写异常。
+                log.error("消息已发送但标记回写失败，下轮将重发: id={}, msgKey={}",
+                        outbox.getId(), outbox.getMsgKey(), e);
             }
         }
     }

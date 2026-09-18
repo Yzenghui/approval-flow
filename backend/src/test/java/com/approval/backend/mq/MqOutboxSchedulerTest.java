@@ -87,6 +87,21 @@ class MqOutboxSchedulerTest {
     }
 
     @Test
+    @DisplayName("发送成功但回写失败：不得转入失败状态机（避免重复投递并累加 retry），留在 PENDING 等下轮重扫")
+    void shouldNotTreatMarkSentFailureAsSendFailure() throws Exception {
+        when(mqOutboxService.loadDue(anyInt())).thenReturn(List.of(
+                outbox(1L, "approval-event", "1", "{}")));
+
+        doThrow(new RuntimeException("db writeback failed"))
+                .when(mqOutboxService).markSent(1L);
+
+        scheduler.dispatchPending();
+
+        verify(approvalEventProducer).send(eq("approval-event"), eq("1"), eq("{}"));
+        verify(mqOutboxService, never()).markFailed(any(), any());
+    }
+
+    @Test
     @DisplayName("全部失败：每条都进入失败状态机，不会因为第一条异常就中断整批")
     void shouldMarkFailedForEveryRecordWhenBrokerIsDown() throws Exception {
         when(mqOutboxService.loadDue(anyInt())).thenReturn(List.of(

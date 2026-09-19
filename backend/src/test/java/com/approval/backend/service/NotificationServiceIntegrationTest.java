@@ -1,5 +1,9 @@
 package com.approval.backend.service;
 
+import com.approval.backend.common.constant.EnableStatus;
+import com.approval.backend.common.constant.NotificationReadStatus;
+import com.approval.backend.common.constant.ProcessInstanceStatus;
+import com.approval.backend.common.constant.TaskStatus;
 import com.approval.backend.dto.message.ApprovalEventMessage;
 import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
@@ -52,7 +56,7 @@ class NotificationServiceIntegrationTest {
         ProcessDefinition definition = new ProcessDefinition();
         definition.setName("通知幂等集成测试-" + System.currentTimeMillis());
         definition.setVersion(1);
-        definition.setStatus(1);
+        definition.setStatus(EnableStatus.ENABLED);
         definition.setFormSchema("{}");
         processDefinitionMapper.insert(definition);
         definitionId = definition.getId();
@@ -72,7 +76,7 @@ class NotificationServiceIntegrationTest {
         instance.setInitiatorId(RECIPIENT_ID);
         instance.setFormData("{}");
         instance.setSubmitCount(1);
-        instance.setStatus(1);
+        instance.setStatus(ProcessInstanceStatus.APPROVING);
         processInstanceMapper.insert(instance);
         instanceId = instance.getId();
 
@@ -82,7 +86,7 @@ class NotificationServiceIntegrationTest {
         task.setNodeName("审批节点");
         task.setAssigneeId(RECIPIENT_ID);
         task.setSubmitRound(1);
-        task.setStatus(0);
+        task.setStatus(TaskStatus.PENDING);
         taskMapper.insert(task);
         taskId = task.getId();
     }
@@ -122,8 +126,8 @@ class NotificationServiceIntegrationTest {
         assertNotNull(saved);
         assertEquals(instanceId, saved.getInstanceId());
         assertEquals(RECIPIENT_ID, saved.getRecipientId());
-        assertEquals(0, saved.getType());
-        assertEquals(0, saved.getIsRead(), "新通知默认未读");
+        assertEquals(ApprovalEventMessage.TYPE_REJECT, saved.getType());
+        assertEquals(NotificationReadStatus.UNREAD, saved.getIsRead(), "新通知默认未读");
 
         // 第二次插入会撞 uk_task_type，由 MySQL 抛 1062、Spring 转换成 DuplicateKeyException，
         // 服务内部必须把它按"已处理"吞掉
@@ -138,7 +142,7 @@ class NotificationServiceIntegrationTest {
     void differentTypesShouldCoexist() {
         ApprovalEventMessage reject = sampleEvent();
         ApprovalEventMessage todo = sampleEvent();
-        todo.setType(1);
+        todo.setType(ApprovalEventMessage.TYPE_TODO);
         todo.setContent("您有一条待办");
 
         notificationService.save(reject);
@@ -156,7 +160,7 @@ class NotificationServiceIntegrationTest {
         ApprovalEventMessage eventMessage = new ApprovalEventMessage();
         eventMessage.setInstanceId(instanceId);
         eventMessage.setTaskId(taskId);
-        eventMessage.setType(0);
+        eventMessage.setType(ApprovalEventMessage.TYPE_REJECT);
         eventMessage.setRecipientId(RECIPIENT_ID);
         eventMessage.setContent("您的【通知幂等集成测试】申请已被驳回");
         return eventMessage;

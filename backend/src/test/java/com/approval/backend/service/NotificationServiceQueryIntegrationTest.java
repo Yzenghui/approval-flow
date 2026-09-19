@@ -2,6 +2,10 @@ package com.approval.backend.service;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.common.constant.EnableStatus;
+import com.approval.backend.common.constant.NotificationReadStatus;
+import com.approval.backend.common.constant.ProcessInstanceStatus;
+import com.approval.backend.common.constant.TaskStatus;
 import com.approval.backend.dto.response.NotificationResponse;
 import com.approval.backend.entity.Notification;
 import com.approval.backend.entity.ProcessDefinition;
@@ -73,7 +77,7 @@ class NotificationServiceQueryIntegrationTest {
         ProcessDefinition definition = new ProcessDefinition();
         definition.setName("通知读侧集成测试-" + System.nanoTime());
         definition.setVersion(1);
-        definition.setStatus(1);
+        definition.setStatus(EnableStatus.ENABLED);
         definition.setFormSchema("{}");
         processDefinitionMapper.insert(definition);
         definitionId = definition.getId();
@@ -93,7 +97,7 @@ class NotificationServiceQueryIntegrationTest {
         instance.setInitiatorId(currentUserId);
         instance.setFormData("{}");
         instance.setSubmitCount(1);
-        instance.setStatus(1);
+        instance.setStatus(ProcessInstanceStatus.APPROVING);
         processInstanceMapper.insert(instance);
         instanceId = instance.getId();
 
@@ -258,7 +262,7 @@ class NotificationServiceQueryIntegrationTest {
         notification.setRecipientId(recipientId);
         notification.setType(type);
         notification.setContent("通知读侧集成测试-taskId=" + taskId);
-        notification.setIsRead(0);
+        notification.setIsRead(NotificationReadStatus.UNREAD);
         notification.setCreateTime(createTime);
         notificationMapper.insert(notification);
         return notification.getId();
@@ -271,7 +275,7 @@ class NotificationServiceQueryIntegrationTest {
         task.setNodeName("审批节点");
         task.setAssigneeId(currentUserId);
         task.setSubmitRound(1);
-        task.setStatus(0);
+        task.setStatus(TaskStatus.PENDING);
         taskMapper.insert(task);
         return task.getId();
     }
@@ -283,7 +287,7 @@ class NotificationServiceQueryIntegrationTest {
         user.setPassword("test-only");
         user.setName(unique);
         user.setEmail(unique + "@test.local");
-        user.setStatus(1);
+        user.setStatus(EnableStatus.ENABLED);
         userMapper.insert(user);
         return user.getId();
     }

@@ -2,6 +2,7 @@ package com.approval.backend.service.impl;
 
 import com.approval.backend.common.BusinessException;
 import com.approval.backend.common.PageResult;
+import com.approval.backend.common.constant.NotificationReadStatus;
 import com.approval.backend.dto.message.ApprovalEventMessage;
 import com.approval.backend.dto.response.NotificationResponse;
 import com.approval.backend.entity.Notification;
@@ -50,9 +51,9 @@ class NotificationServiceImplTest {
         assertEquals(10L, saved.getInstanceId());
         assertEquals(1L, saved.getTaskId());
         assertEquals(1L, saved.getRecipientId());
-        assertEquals(2, saved.getType());
+        assertEquals(ApprovalEventMessage.TYPE_APPROVED, saved.getType());
         assertEquals("审批通过", saved.getContent());
-        assertEquals(0, saved.getIsRead(), "新通知默认未读");
+        assertEquals(NotificationReadStatus.UNREAD, saved.getIsRead(), "新通知默认未读");
     }
 
     @Test
@@ -80,9 +81,9 @@ class NotificationServiceImplTest {
         notification.setId(7L);
         notification.setInstanceId(10L);
         notification.setTaskId(1L);
-        notification.setType(0);
+        notification.setType(ApprovalEventMessage.TYPE_REJECT);
         notification.setContent("您的【请假】申请已被驳回");
-        notification.setIsRead(0);
+        notification.setIsRead(NotificationReadStatus.UNREAD);
         notification.setCreateTime(LocalDateTime.of(2026, 9, 12, 10, 0));
         Page<Notification> page = new Page<>(1, 10);
         page.setRecords(List.of(notification));
@@ -99,9 +100,9 @@ class NotificationServiceImplTest {
         assertEquals(7L, response.getId());
         assertEquals(10L, response.getInstanceId(), "instanceId 缺失前端无法跳转申请详情");
         assertEquals(1L, response.getTaskId(), "taskId 缺失前端无法跳转任务处理");
-        assertEquals(0, response.getType());
+        assertEquals(ApprovalEventMessage.TYPE_REJECT, response.getType());
         assertEquals("您的【请假】申请已被驳回", response.getContent());
-        assertEquals(0, response.getIsRead());
+        assertEquals(NotificationReadStatus.UNREAD, response.getIsRead());
         assertEquals(LocalDateTime.of(2026, 9, 12, 10, 0), response.getCreateTime());
     }
 
@@ -171,7 +172,7 @@ class NotificationServiceImplTest {
         ApprovalEventMessage eventMessage = new ApprovalEventMessage();
         eventMessage.setInstanceId(10L);
         eventMessage.setTaskId(1L);
-        eventMessage.setType(2);
+        eventMessage.setType(ApprovalEventMessage.TYPE_APPROVED);
         eventMessage.setRecipientId(1L);
         eventMessage.setContent("审批通过");
         return eventMessage;

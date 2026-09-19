@@ -1,5 +1,8 @@
 package com.approval.backend.service;
 
+import com.approval.backend.common.constant.EnableStatus;
+import com.approval.backend.common.constant.ProcessInstanceStatus;
+import com.approval.backend.common.constant.TaskStatus;
 import com.approval.backend.dto.message.ApprovalEventMessage;
 import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
@@ -84,7 +87,7 @@ class TaskNotificationIntegrationTest {
         ProcessDefinition definition = new ProcessDefinition();
         definition.setName("通知生产端测试-" + System.currentTimeMillis());
         definition.setVersion(1);
-        definition.setStatus(1);
+        definition.setStatus(EnableStatus.ENABLED);
         definition.setFormSchema("{}");
         processDefinitionMapper.insert(definition);
         definitionId = definition.getId();
@@ -97,7 +100,7 @@ class TaskNotificationIntegrationTest {
         instance.setInitiatorId(INITIATOR_ID);
         instance.setFormData("{}");
         instance.setSubmitCount(1);
-        instance.setStatus(1);
+        instance.setStatus(ProcessInstanceStatus.APPROVING);
         processInstanceMapper.insert(instance);
         instanceId = instance.getId();
 
@@ -107,7 +110,7 @@ class TaskNotificationIntegrationTest {
         task.setNodeName("部门经理审批");
         task.setAssigneeId(APPROVER_ID);
         task.setSubmitRound(1);
-        task.setStatus(0);
+        task.setStatus(TaskStatus.PENDING);
         taskMapper.insert(task);
         taskId = task.getId();
     }
@@ -158,7 +161,7 @@ class TaskNotificationIntegrationTest {
         // taskId 必须指向新建的那个任务，否则消费端幂等键会落在已办任务上
         Task nextTask = taskMapper.selectOne(new LambdaQueryWrapper<Task>()
                 .eq(Task::getInstanceId, instanceId)
-                .eq(Task::getStatus, 0));
+                .eq(Task::getStatus, TaskStatus.PENDING));
         assertNotNull(nextTask, "应生成下一节点任务");
         assertEquals(NEXT_APPROVER_ID, nextTask.getAssigneeId(), "下一节点任务应分配给下一节点审批人");
         assertEquals(nextTask.getId(), todo.getTaskId());

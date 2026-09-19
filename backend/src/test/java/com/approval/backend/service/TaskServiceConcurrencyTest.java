@@ -1,6 +1,10 @@
 package com.approval.backend.service;
 
 import com.approval.backend.common.BusinessException;
+import com.approval.backend.common.constant.ApprovalAction;
+import com.approval.backend.common.constant.EnableStatus;
+import com.approval.backend.common.constant.ProcessInstanceStatus;
+import com.approval.backend.common.constant.TaskStatus;
 import com.approval.backend.entity.*;
 import com.approval.backend.mapper.*;
 import com.approval.backend.mq.ApprovalEventProducer;
@@ -69,7 +73,7 @@ class TaskServiceConcurrencyTest {
         ProcessDefinition definition = new ProcessDefinition();
         definition.setName("并发测试流程-" + System.currentTimeMillis());
         definition.setVersion(1);
-        definition.setStatus(1);
+        definition.setStatus(EnableStatus.ENABLED);
         definition.setFormSchema("{}");
         processDefinitionMapper.insert(definition);
         testDefinitionId = definition.getId();
@@ -89,7 +93,7 @@ class TaskServiceConcurrencyTest {
         instance.setInitiatorId(1L);
         instance.setFormData("{}");
         instance.setSubmitCount(1);
-        instance.setStatus(1);
+        instance.setStatus(ProcessInstanceStatus.APPROVING);
         processInstanceMapper.insert(instance);
         testInstanceId = instance.getId();
 
@@ -99,7 +103,7 @@ class TaskServiceConcurrencyTest {
         task.setNodeName("审批节点");
         task.setAssigneeId(1L);
         task.setSubmitRound(1);
-        task.setStatus(0);
+        task.setStatus(TaskStatus.PENDING);
         taskMapper.insert(task);
         testTaskId = task.getId();
     }
@@ -177,16 +181,16 @@ class TaskServiceConcurrencyTest {
         assertEquals(threadCount - 1, failCount.get(), "其余线程应被锁拦截");
 
         Task updatedTask = taskMapper.selectById(testTaskId);
-        assertEquals(1, updatedTask.getStatus(), "任务状态应为已处理");
+        assertEquals(TaskStatus.COMPLETED, updatedTask.getStatus(), "任务状态应为已处理");
 
         ProcessInstance updatedInstance = processInstanceMapper.selectById(testInstanceId);
-        assertEquals(2, updatedInstance.getStatus(), "流程实例状态应为通过（无下一节点）");
+        assertEquals(ProcessInstanceStatus.APPROVED, updatedInstance.getStatus(), "流程实例状态应为通过（无下一节点）");
 
         Long recordCount = approvalRecordMapper.selectCount(
                 new LambdaQueryWrapper<ApprovalRecord>()
                         .eq(ApprovalRecord::getInstanceId, testInstanceId)
                         .eq(ApprovalRecord::getTaskId, testTaskId)
-                        .eq(ApprovalRecord::getAction, 1));
+                        .eq(ApprovalRecord::getAction, ApprovalAction.APPROVE));
         assertEquals(1, recordCount, "只有一条审批记录");
     }
 
@@ -230,16 +234,16 @@ class TaskServiceConcurrencyTest {
         assertEquals(threadCount - 1, failCount.get(), "其余线程应被锁拦截");
 
         Task updatedTask = taskMapper.selectById(testTaskId);
-        assertEquals(1, updatedTask.getStatus(), "任务状态应为已处理");
+        assertEquals(TaskStatus.COMPLETED, updatedTask.getStatus(), "任务状态应为已处理");
 
         ProcessInstance updatedInstance = processInstanceMapper.selectById(testInstanceId);
-        assertEquals(3, updatedInstance.getStatus(), "流程实例状态应为驳回");
+        assertEquals(ProcessInstanceStatus.REJECTED, updatedInstance.getStatus(), "流程实例状态应为驳回");
 
         Long recordCount = approvalRecordMapper.selectCount(
                 new LambdaQueryWrapper<ApprovalRecord>()
                         .eq(ApprovalRecord::getInstanceId, testInstanceId)
                         .eq(ApprovalRecord::getTaskId, testTaskId)
-                        .eq(ApprovalRecord::getAction, 2));
+                        .eq(ApprovalRecord::getAction, ApprovalAction.REJECT));
         assertEquals(1, recordCount, "只有一条驳回记录");
     }
 }

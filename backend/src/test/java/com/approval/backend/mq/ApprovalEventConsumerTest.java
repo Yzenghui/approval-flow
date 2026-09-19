@@ -111,7 +111,7 @@ class ApprovalEventConsumerTest {
         ApprovalEventMessage eventMessage = new ApprovalEventMessage();
         eventMessage.setInstanceId(10L);
         eventMessage.setTaskId(1L);
-        eventMessage.setType(2);
+        eventMessage.setType(ApprovalEventMessage.TYPE_APPROVED);
         eventMessage.setRecipientId(1L);
         eventMessage.setContent("审批通过");
         return eventMessage;

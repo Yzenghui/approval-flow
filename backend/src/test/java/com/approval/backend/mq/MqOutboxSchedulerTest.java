@@ -1,5 +1,6 @@
 package com.approval.backend.mq;
 
+import com.approval.backend.common.constant.MqOutboxStatus;
 import com.approval.backend.entity.MqOutbox;
 import com.approval.backend.service.event.MqOutboxService;
 import org.junit.jupiter.api.BeforeEach;
@@ -123,7 +124,7 @@ class MqOutboxSchedulerTest {
         record.setTopic(topic);
         record.setMsgKey(msgKey);
         record.setBody(body);
-        record.setStatus(0);
+        record.setStatus(MqOutboxStatus.PENDING);
         record.setRetryCount(0);
         return record;
     }

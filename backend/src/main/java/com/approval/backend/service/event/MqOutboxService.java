@@ -3,6 +3,7 @@ package com.approval.backend.service.event;
 import com.approval.backend.config.rocketmq.RocketMQConstant;
 import com.approval.backend.dto.message.ApprovalEventMessage;
 import com.approval.backend.entity.MqOutbox;
+import com.approval.backend.common.constant.MqOutboxStatus;
 import com.approval.backend.mapper.MqOutboxMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -68,7 +69,7 @@ public class MqOutboxService {
         outbox.setTopic(RocketMQConstant.APPROVAL_EVENT_TOPIC);
         outbox.setMsgKey(String.valueOf(eventMessage.getTaskId()));
         outbox.setBody(body);
-        outbox.setStatus(0);
+        outbox.setStatus(MqOutboxStatus.PENDING);
         outbox.setRetryCount(0);
         // 落库即到期：第一次扫描就会取走
         outbox.setNextRetryTime(LocalDateTime.now());
@@ -85,7 +86,7 @@ public class MqOutboxService {
      */
     public List<MqOutbox> loadDue(int limit) {
         return mqOutboxMapper.selectList(new LambdaQueryWrapper<MqOutbox>()
-                .eq(MqOutbox::getStatus, 0)
+                .eq(MqOutbox::getStatus, MqOutboxStatus.PENDING)
                 .le(MqOutbox::getNextRetryTime, LocalDateTime.now())
                 .orderByAsc(MqOutbox::getId)
                 .last("LIMIT " + limit));
@@ -95,7 +96,7 @@ public class MqOutboxService {
     public void markSent(Long id) {
         MqOutbox update = new MqOutbox();
         update.setId(id);
-        update.setStatus(1);
+        update.setStatus(MqOutboxStatus.SENT);
         mqOutboxMapper.updateById(update);
     }
 
@@ -111,7 +112,7 @@ public class MqOutboxService {
         update.setErrorMsg(abbreviate(e));
 
         if (nextRetryCount >= MAX_RETRY) {
-            update.setStatus(2);
+            update.setStatus(MqOutboxStatus.DEAD);
             // 死信不再被扫描，next_retry_time 无意义，保持原值
         } else {
             long backoff = BACKOFF_SECONDS[Math.min(nextRetryCount - 1, BACKOFF_SECONDS.length - 1)];

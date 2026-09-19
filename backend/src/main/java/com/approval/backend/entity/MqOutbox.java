@@ -1,5 +1,6 @@
 package com.approval.backend.entity;
 
+import com.approval.backend.common.constant.MqOutboxStatus;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
@@ -24,7 +25,7 @@ public class MqOutbox {
     private String msgKey;
     /** 消息体快照：事务内序列化完成的 JSON，不接受扫表时回查 */
     private String body;
-    /** 状态：0待发送 1已发送 2发送失败（死信） */
+    /** 状态：PENDING(0)待发送 SENT(1)已发送 DEAD(2)发送失败（死信），取值见 {@link MqOutboxStatus} */
     private Integer status;
     /** 已重试次数 */
     private Integer retryCount;

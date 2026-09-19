@@ -62,6 +62,7 @@ import {
   Setting,
   User,
   Bell,
+  Connection,
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notification'
@@ -86,6 +87,7 @@ const menus = computed(() => {
     return [
       { path: '/definitions', title: '流程定义', icon: Setting },
       { path: '/users', title: '用户管理', icon: User },
+      { path: '/admin/mq-outbox', title: 'MQ发件箱', icon: Connection },
     ]
   }
 

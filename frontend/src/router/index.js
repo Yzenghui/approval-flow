@@ -33,6 +33,7 @@ const router = createRouter({
         // 管理员页面
         { path: 'definitions', component: () => import('@/views/admin/DefinitionList.vue') },
         { path: 'users', component: () => import('@/views/admin/UserList.vue') },
+        { path: 'admin/mq-outbox', component: () => import('@/views/admin/MqOutboxAdmin.vue') },
         {
           path: 'admin/definition/create',
           component: () => import('@/views/admin/DefinitionDetail.vue'),

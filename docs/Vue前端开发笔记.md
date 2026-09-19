@@ -22,6 +22,7 @@ HTML 负责页面结构。在 Vue 中，99% 的 HTML 标签用法与原生一致
 | `<td>` / `<tr>` / `<tr>` | 表格                        | 数据量大时改用 Element UI 的 `el-table` | 原生写法繁琐                               | 推荐 `el-table`                              |
 | `<img>`                  | 图片                        | 动态绑定 `:src`                         | `<img src="logo.png">`                     | `<img :src="imageUrl">`                      |
 | `<a>`                    | 链接                        | 使用 `<router-link>` 替代（Vue Router） | `<a href="/home">首页</a>`                 | `<router-link to="/home">首页</router-link>` |
+| `<pre>`                  | 预格式化文本（原样保留空格与换行；长行不自动换行，需配 CSS `white-space: pre-wrap`） | 用法与原生一致，内容常用 `{{ }}` 插值渲染动态文本（如 JSON、日志） | `<pre>{"a": 1}</pre>` | `<pre>{{ jsonText }}</pre>` |
 
 #### 两个重要属性
 
@@ -2479,6 +2480,34 @@ const menus = [
   </el-tabs>
 </template>
 ```
+
+#### 栅格布局（el-row / el-col）
+
+用于将一行内容按 24 列栅格分栏排版，是统计卡、多列表单等页面布局的基础。
+
+| 组件     | 属性      | 说明                     | 可选值 | 默认值 |
+| -------- | --------- | ------------------------ | ------ | ------ |
+| `el-row` | `:gutter` | 相邻列的间距，单位为像素 | number | `0`    |
+| `el-col` | `:span`   | 该列占据的份数，一行共 24 份 | number | `24` |
+|          | `:offset` | 该列左侧空出的份数      | number | `0`    |
+
+```vue
+<template>
+  <!-- 四张统计卡：每张占 6 份正好占满一行，列间距 16px -->
+  <el-row :gutter="16">
+    <el-col :span="6"><div>待发送</div></el-col>
+    <el-col :span="6"><div>退避等待</div></el-col>
+    <el-col :span="6"><div>已发送</div></el-col>
+    <el-col :span="6"><div>死信</div></el-col>
+  </el-row>
+</template>
+```
+
+> **特性说明**：
+>
+> - `span` 是份数不是像素，一行共 24 份：`span="6"` 即四分之一宽，四个 `6` 正好占满一行。
+> - `gutter` 是像素不是份数，实现方式是给每列左右各加 `gutter / 2` 的内边距，因此间距由「列内 padding」而非「列间 margin」构成，列内的卡片内容不会被缝隙挤变形。
+> - 需要响应式分栏时可加 `:xs` / `:sm` / `:md` / `:lg` 断点属性，如 `:xs="24" :md="12" :lg="6"` 表示小屏一列、中屏两列、大屏四列。
 
 #### 卡片（el-card）
 

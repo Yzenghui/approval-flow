@@ -3708,12 +3708,12 @@ User cached = (User) StpUtil.getSession().get("user");
 
 **多环境配置**：
 
-- 前端使用 `.env.development` 和 `.env.production` 切换 API 基地址
+- 前端通过 `.env.development` 管理开发环境的部署配置（如后端代理地址），接口路径前缀约定硬编码在 `axios.baseURL` 与 `vite.config.js` 中
 - 后端使用 `application-dev.yml` 和 `application-prod.yml` 切换数据库、端口等配置
 
 **请求路径规则（指导 API 地址配置）**：
 
-浏览器根据请求路径的写法决定拼接方式，这直接影响 `.env` 中 `VITE_API_BASE_URL` 的配置和代码中的请求路径。
+浏览器根据请求路径的写法决定拼接方式，这直接影响 `axios.baseURL` 的配置和代码中的请求路径。
 
 | 写法               | 类型     | 浏览器处理           | 示例（页面在 `a.com/instances`） | 适用场景               |
 | ------------------ | -------- | -------------------- | -------------------------------- | ---------------------- |
@@ -3721,7 +3721,9 @@ User cached = (User) StpUtil.getSession().get("user");
 | `api/user`         | 相对路径 | 拼接到当前页面路径后 | `a.com/instances/api/user`       | 容易错乱，不推荐       |
 | `http://b.com/api` | 完整 URL | 直接使用             | `b.com/api`                      | 用于直连后端（会跨域） |
 
-> 因此 `.env` 中通常将 `VITE_API_BASE_URL` 配置为 `/api`（绝对路径），再通过 Vite 代理将 `/api` 转发到真实后端地址。这样无论页面路径多深，请求地址始终正确。
+> 因此 `axios.baseURL` 约定设为 `/api`（绝对路径），再通过 Vite 代理将 `/api` 转发到真实后端地址。这样无论页面路径多深，请求地址始终正确。
+>
+> **多服务前缀的处理**：当项目演进出多类转发（主 API `/api`、文件上传 `/upload`、WebSocket `/ws` 等）时，应在 `axios` 与 `vite.config.js` 中分别硬编码各前缀对应的 `target`，而不是把所有前缀都塞进单个环境变量，单一变量无法表达多对一映射。
 
 ##### 生产部署的三种方式
 

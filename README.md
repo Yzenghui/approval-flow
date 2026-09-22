@@ -99,14 +99,39 @@ npm run dev
 
 后端默认监听 `8080` 端口，前端默认监听 `5173` 端口。
 
-若需修改数据库/Redis等配置，请编辑 `backend/src/main/resources/application.yml`。
+### 4. 配置说明（环境变量与 profile）
+
+配置按「公共 + 环境」两层拆分，三个文件均入库：
+
+| 文件                               | 职责         | 内容                                                             |
+| ---------------------------------- | ------------ | ---------------------------------------------------------------- |
+| `backend/.../application.yml`      | 公共层       | 应用名、Sa-Token、MyBatis-Plus 通用配置、MQ 组名与重试策略       |
+| `backend/.../application-dev.yml`  | 本地开发环境 | 本地地址与凭据、打印 SQL、debug 日志                             |
+| `backend/.../application-prod.yml` | 生产环境     | 连接信息全部由环境变量注入（无默认值）、关闭 SQL 打印、info 日志 |
+
+规律：**`application.yml` 只回答「有哪些配置项」，`application-{profile}.yml` 只回答「这套环境的值是什么」**。切换环境无需改代码，改本地环境地址直接改 `application-dev.yml` 即可。
+
+```bash
+# 本地开发：默认激活 dev，配置来自 application-dev.yml
+mvn spring-boot:run
+
+# 生产部署：显式指定 profile 并注入真实连接信息
+SPRING_PROFILES_ACTIVE=prod \
+MYSQL_HOST=10.0.0.12 MYSQL_USERNAME=app_flow MYSQL_PASSWORD=*** \
+REDIS_HOST=10.0.0.13 REDIS_PASSWORD=*** \
+ROCKETMQ_NAME_SERVER=10.0.0.14:9876 \
+java -jar target/approval-flow-backend.jar
+```
 
 ## 项目结构
 
 ```
 approval-flow/
 ├── backend/                # Spring Boot 后端
-│   ├── src/
+│   ├── src/main/resources/
+│   │   ├── application.yml             # 公共配置（环境无关）
+│   │   ├── application-dev.yml         # 本地开发环境
+│   │   └── application-prod.yml        # 生产环境（环境变量注入）
 │   └── pom.xml
 ├── frontend/               # Vue 3 前端
 │   ├── src/

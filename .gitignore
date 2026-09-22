@@ -58,12 +58,4 @@ backend/.mvn/wrapper/maven-wrapper.jar
 backend/logs/
 backend/*.log
 
-# 敏感配置
-backend/src/main/resources/application-local.yml
-backend/src/main/resources/application-dev.yml
-backend/*-local.yml
-backend/*-dev.yml
-
-# 保留模板示例
-!backend/src/main/resources/application.yml
-!backend/src/main/resources/application-template.yml
+# 环境配置（application.yml / application-dev.yml / application-prod.yml）全部入库，无需忽略规则

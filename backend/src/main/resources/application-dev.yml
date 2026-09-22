@@ -1,0 +1,26 @@
+# 本地开发环境：激活 dev 时生效
+# 本地库在内网，凭据不敏感，随仓库一起提交
+
+spring:
+  datasource:
+    url: jdbc:mysql://192.168.149.128:3306/approval_flow?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+
+  data:
+    redis:
+      host: 192.168.149.128
+      port: 6379
+      password: 123456
+      database: 0
+
+rocketmq:
+  name-server: 192.168.149.128:9876
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl    # 本地打印 SQL
+
+logging:
+  level:
+    com.approval: debug

@@ -107,6 +107,8 @@
 	</dependencies>
 
 	<build>
+		<!-- 固定产物名，避免部署命令随版本号变化 -->
+		<finalName>approval-flow-backend</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

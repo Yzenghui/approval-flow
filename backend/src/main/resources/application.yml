@@ -1,59 +1,43 @@
+# 公共配置：与部署环境无关的部分，所有环境共享
+# 连接地址与凭据、日志级别等环境相关配置见 application-{profile}.yml
+# 默认激活 dev（本地），生产由环境变量 SPRING_PROFILES_ACTIVE=prod 指定
+
 spring:
   application:
     name: approval-flow-backend
 
-  # 数据库配置
-  datasource:
-    url: jdbc:mysql://localhost:3306/approval_flow?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-    username: root
-    password: 123456
-    driver-class-name: com.mysql.cj.jdbc.Driver
+  profiles:
+    active: dev
 
-  # Redis 配置
-  data:
-    redis:
-      host: 192.168.149.128
-      port: 6379
-      password: 123456
-      database: 0
-
-# Sa-Token 配置
+# Sa-Token
 sa-token:
-  token-name: Authorization        # 前端请求头携带的 Token 字段名
-  timeout: 86400                   # Token 有效期（秒），86400 即 24 小时
-  active-timeout: -1               # 最低活跃频率，-1 表示不限制（不会因不操作而提前失效）
-  is-concurrent: true              # 是否允许多地同时登录（true 允许同账号多设备在线）
-  is-share: true                   # 是否共享 Token（true 表示多设备共用一个 Token，一处登出全部下线）
-  token-style: uuid                # Token 生成风格，使用标准 UUID
-  is-log: false                    # 是否开启框架日志，生产环境建议关闭
+  token-name: Authorization
+  timeout: 86400                   # Token 有效期（秒）
+  active-timeout: -1               # -1 表示不限制最低活跃频率
+  is-concurrent: true              # 允许多地同时登录
+  is-share: true                   # 多设备共用一个 Token，一处登出全部下线
+  token-style: uuid
+  is-log: false
 
-# MyBatis-Plus 配置
+# MyBatis-Plus
 mybatis-plus:
-  mapper-locations: classpath*:mapper/**/*.xml    # XML 文件位置
+  mapper-locations: classpath*:mapper/**/*.xml
   global-config:
     db-config:
-      id-type: auto                               # 主键自增
+      id-type: auto
   configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印 SQL
-    map-underscore-to-camel-case: true            # 自动驼峰映射
+    map-underscore-to-camel-case: true
 
-# RocketMQ 配置
+# RocketMQ
 rocketmq:
-  name-server: 192.168.149.128:9876   # NameServer 地址（namesrv 容器映射端口）
-  producer-group: approval-producer    # 生产者组
-  consumer-group: approval-consumer    # 消费者组
-  send-msg-timeout: 3000               # 同步发送超时（毫秒）
-  consume-message-batch-max-size: 1    # 单次消费回调处理的消息数
-  max-reconsume-times: 5               # 最大重试次数，超出后进入死信队列
+  producer-group: approval-producer
+  consumer-group: approval-consumer
+  send-msg-timeout: 3000
+  consume-message-batch-max-size: 1
+  max-reconsume-times: 5           # 超出后进入死信队列
 
-# 本地消息表（扫表任务）
+# 本地消息表扫表任务
 mq:
   outbox:
-    enabled: true            # false 时扫表任务不注册，适合本地起服务但不连 MQ
-    scan-interval-ms: 5000   # 扫表间隔，测试提速时可调小
-
-
-# 日志配置
-logging:
-  level:
-    com.approval: debug
+    enabled: true                  # false 时不注册扫表任务
+    scan-interval-ms: 5000         # 扫表间隔，压测提速时可调小

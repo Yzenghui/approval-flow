@@ -2882,39 +2882,47 @@ $--color-success: #67c23a;
 | `.env.development` | 开发环境（`npm run dev`）   |
 | `.env.production`  | 生产环境（`npm run build`） |
 
+> 如果生产环境无需区分任何配置（路径前缀等约定硬编码、部署由 Nginx 反向代理承担），可直接删除 `.env.production` 。
+
 #### 变量定义
 
 以 `VITE_` 开头的变量才会暴露给客户端：
 
 ```env
 # .env.development
-# axios 的 baseURL，使用路径前缀 /api
-VITE_API_BASE_URL = /api
 # Vite 代理转发的目标地址，仅开发环境使用
 VITE_PROXY_TARGET = http://localhost:8080
-
-# .env.production（生产环境由 Nginx 处理转发，无需代理变量）
-VITE_API_BASE_URL = /api
 ```
 
-> `baseURL` 推荐设为路径前缀（如 `/api`），而非完整域名：
->
-> - 业务代码中 `request.get('/user/login')` 会自动拼接为 `/api/user/login`
-> - 开发环境通过 Vite 代理将 `/api` 转发到后端
-> - 生产环境通过 Nginx 转发
-> - 两套环境均无需修改业务代码
->
-> 如果将 `baseURL` 设为完整域名（如 `http://localhost:8080/api`），开发环境要么需要 Vite 代理做 rewrite 去掉域名部分，要么后端配置 CORS 允许跨域，均增加了复杂度。
+接口路径前缀（如 `/api`）属于业务约定，建议**硬编码到代码**而非放入环境变量：
+
+- **多服务演进**：项目扩展时常出现多类转发（主 API `/api`、文件上传 `/upload`、WebSocket `/ws` 等），单一环境变量无法表达"多 key 对多 target"的映射，硬编码 + 多 key 更易扩展。
+- **配置原则**：`.env` 应只承载"会因部署环境变化的值"（如后端地址），路径前缀是不变量，配置化反而违反该原则。
+- **故障域**：硬编码意味着 `axios.baseURL` 与 `vite.config.js` 的 proxy key 各写一次，看似要"双源同步"；若改用 env 注入，同步责任集中到 `.env` 这一个单点，一旦配置写错（如误填完整 URL），dev 与 prod 会同时失灵，故障域反而更集中。
+
+硬编码的典型形式：
+
+```javascript
+// src/utils/request.js
+baseURL: '/api'
+
+// vite.config.js
+proxy: { '/api': { target: env.VITE_PROXY_TARGET, changeOrigin: true } }
+```
+
+业务代码中 `request.get('/user/login')` 会自动拼接为 `/api/user/login`，开发环境由 Vite proxy 转发，生产环境由 Nginx 转发，两套环境无需修改业务代码。
+
+注意：`baseURL` 应使用路径前缀（如 `/api`），不要使用完整域名（如 `http://localhost:8080/api`），否则 dev 环境要么需要 Vite 代理做 rewrite 去掉域名部分，要么后端配置 CORS 允许跨域，均增加复杂度。
 
 #### 变量使用
 
 ```javascript
 // Vite 项目中读取
-const baseURL = import.meta.env.VITE_API_BASE_URL;
+const target = import.meta.env.VITE_PROXY_TARGET;
 const title = import.meta.env.VITE_APP_TITLE;
 
 // Vue CLI 项目（变量名必须以 VUE_APP_ 开头）
-const baseURL = process.env.VUE_APP_API_BASE_URL;
+const target = process.env.VUE_APP_PROXY_TARGET;
 ```
 
 > 不同构建工具读取环境变量的方式不同：Vite 使用 `import.meta.env`，Vue CLI 使用 `process.env`。
@@ -2939,7 +2947,7 @@ import { ElMessage } from 'element-plus';  // Element Plus 消息提示
 
 // 创建 Axios 实例
 const service = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,  // 基础 URL，从环境变量读取，所有请求的 URL 都会以该值为前缀
+  baseURL: '/api',  // 路径前缀 /api 是业务约定，硬编码与 vite.config.js 的 proxy key 保持一致
   timeout: 10000,  // 请求超时（毫秒）
   headers: { 'Content-Type': 'application/json;charset=utf-8' }
 });
@@ -3081,7 +3089,7 @@ export default defineConfig(({ mode }) => {
     plugins: [vue()],
     server: {
       proxy: {
-        [env.VITE_API_BASE_URL]: {
+        '/api': {
           target: env.VITE_PROXY_TARGET,
           changeOrigin: true,
         },
@@ -3098,13 +3106,12 @@ export default defineConfig(({ mode }) => {
 Vue CLI 使用 `VUE_APP_` 前缀的环境变量：
 
 ```javascript
-const apiBaseUrl = process.env.VUE_APP_API_BASE_URL || '/api';
 const proxyTarget = process.env.VUE_APP_PROXY_TARGET || 'http://localhost:8080';
 
 module.exports = {
   devServer: {
     proxy: {
-      [apiBaseUrl]: {
+      '/api': {
         target: proxyTarget,
         changeOrigin: true,
       },

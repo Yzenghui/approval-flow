@@ -41,3 +41,16 @@ mq:
   outbox:
     enabled: true                  # false 时不注册扫表任务
     scan-interval-ms: 5000         # 扫表间隔，压测提速时可调小
+
+# Spring Boot Actuator：暴露 health / info / prometheus 端点供运维与压测观测使用
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always         # 暴露健康检查明细，方便排障
+  metrics:
+    tags:
+      application: ${spring.application.name}   # 给所有指标打 application 标签，便于按服务聚合

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
@@ -75,7 +74,7 @@
 			<artifactId>rocketmq-client</artifactId>
 			<version>4.9.7</version>
 		</dependency>
-		
+
 		<!-- Aviator 表达式引擎 -->
 		<dependency>
 			<groupId>com.googlecode.aviator</groupId>
@@ -103,6 +102,21 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+
+		<!-- Actuator：暴露 health / info / metrics 等端点，作为可观测的统一入口 -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<!-- Prometheus registry：让 Actuator 暴露 /actuator/prometheus 端点 -->
+		<!-- 各组件指标由对应 starter 自动注册（JVM 由 Micrometer 内置，Tomcat 由 web starter，
+             HikariCP 由 jdbc starter，Logback 由 logging starter）,
+			 RocketMQ / Redis 的客户端指标需单独接入 Micrometer -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
 	</dependencies>
 

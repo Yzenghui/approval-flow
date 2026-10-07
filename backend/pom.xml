@@ -111,9 +111,14 @@
 		</dependency>
 
 		<!-- Prometheus registry：让 Actuator 暴露 /actuator/prometheus 端点 -->
-		<!-- 各组件指标由对应 starter 自动注册（JVM 由 Micrometer 内置，Tomcat 由 web starter，
-             HikariCP 由 jdbc starter，Logback 由 logging starter）,
-			 RocketMQ / Redis 的客户端指标需单独接入 Micrometer -->
+		<!-- 各组件指标注册来源：
+     		- JVM：Micrometer 内置
+     		- Tomcat：需 server.tomcat.mbeanregistry.enabled=true（暴露 MBean）
+                		+ management.metrics.enable.tomcat=true（采集指标）
+                		（Spring Boot 2.7+ 默认关闭 MBean 注册）
+     		- HikariCP：jdbc starter
+     		- Logback：logging starter
+     		RocketMQ / Redis 的客户端指标需单独接入 Micrometer -->
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>

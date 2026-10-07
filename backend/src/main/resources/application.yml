@@ -19,6 +19,12 @@ sa-token:
   token-style: uuid
   is-log: false
 
+# Tomcat MBean 注册：开启后 Micrometer 才能通过 JMX 采集 tomcat.threads.* 指标
+server:
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
 # MyBatis-Plus
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -54,3 +60,8 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}   # 给所有指标打 application 标签，便于按服务聚合
+    enable:
+      tomcat: true                 # Tomcat 线程池指标
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true # 暴露 http_server_requests_seconds_bucket，供 p95/p99 直方图计算

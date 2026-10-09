@@ -9,6 +9,10 @@ spring:
   profiles:
     active: dev
 
+  datasource:
+    hikari:
+      maximum-pool-size: 30          
+
 # Sa-Token
 sa-token:
   token-name: Authorization
@@ -46,7 +50,7 @@ rocketmq:
 mq:
   outbox:
     enabled: true                  # false 时不注册扫表任务
-    scan-interval-ms: 5000         # 扫表间隔，压测提速时可调小
+    scan-interval-ms: 1000         # 扫表间隔，压测提速时可调小
 
 # Spring Boot Actuator：暴露 health / info / prometheus 端点供运维与压测观测使用
 management:

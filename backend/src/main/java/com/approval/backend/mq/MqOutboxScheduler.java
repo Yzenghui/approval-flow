@@ -30,7 +30,7 @@ import java.util.List;
 public class MqOutboxScheduler {
 
     /** 单批最多取多少条，防止积压时一轮任务跑太久 */
-    private static final int BATCH_LIMIT = 100;
+    private static final int BATCH_LIMIT = 500;
 
     private final MqOutboxService mqOutboxService;
     private final ApprovalEventProducer approvalEventProducer;

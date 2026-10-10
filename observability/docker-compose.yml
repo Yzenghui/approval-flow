@@ -1,0 +1,80 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: obs-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # Linux 下使该域名解析到宿主机（Docker Desktop 原生支持）
+    networks:
+      - observability
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: obs-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    networks:
+      - observability
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: obs-node-exporter
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - observability
+
+  mysql-exporter:
+    image: prom/mysqld-exporter:v0.14.0
+    container_name: obs-mysql-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "root:123456@(approval-mysql:3306)/"
+    networks:
+      - observability
+      - middleware
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0
+    container_name: obs-redis-exporter
+    restart: unless-stopped
+    command:
+      - '--redis.addr=redis://approval-redis:6379'
+      - '--redis.password=123456'
+    networks:
+      - observability
+      - middleware
+
+networks:
+  observability:
+    driver: bridge
+  middleware:
+    external: true
+    name: middleware
+
+volumes:
+  prometheus-data:
+  grafana-data:

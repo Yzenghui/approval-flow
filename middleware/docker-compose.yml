@@ -47,6 +47,8 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: 123456
+      # 启用 UTF-8 locale，避免 mysql 客户端默认 latin1 导致中文乱码
+      LANG: C.UTF-8
     ports:
       - "3306:3306"
     volumes:

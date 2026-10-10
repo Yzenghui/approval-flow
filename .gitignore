@@ -61,8 +61,4 @@ backend/*.log
 # 本地环境变量（backend/.env：dev 中间件地址）
 backend/.env
 
-# 压测与观测栈（k6/ 与 observability/：仅本地使用，不入库）
-k6/
-observability/
-
 # 环境配置（application.yml / application-dev.yml / application-prod.yml）全部入库，无需忽略规则

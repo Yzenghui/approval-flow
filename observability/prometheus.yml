@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: approval-observability
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  - job_name: backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      # Prometheus 运行在容器内，host.docker.internal 即其宿主机——后端与观测栈同机时零配置；
+      # 后端在虚拟机 / 远程机器时，改为该机器的可达 IP
+      - targets: ['host.docker.internal:8080']
+        labels:
+          service: approval-backend
+
+  - job_name: node
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  - job_name: mysql-exporter
+    static_configs:
+      - targets: ['mysql-exporter:9104']
+
+  - job_name: redis-exporter
+    static_configs:
+      - targets: ['redis-exporter:9121']

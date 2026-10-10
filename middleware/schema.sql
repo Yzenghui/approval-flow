@@ -1,3 +1,5 @@
+SET NAMES utf8mb4;  -- 设置连接字符集，避免客户端按 latin1 解读中文
+
 CREATE DATABASE IF NOT EXISTS approval_flow
 DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;

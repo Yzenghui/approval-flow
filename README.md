@@ -1,4 +1,4 @@
-﻿# 审批流系统 (Approval Flow)
+# 审批流系统 (Approval Flow)
 
 轻量级审批流组件，支持动态表单、多级审批、撤回/驳回/修改重提等完整流程。可嵌入其他业务系统，也提供独立的 Vue 3 + Element Plus 演示前端。
 
@@ -106,22 +106,7 @@ cd approval-flow
 | RocketMQ Broker | `rmqbroker` | 10909 / 10911 | 消息代理 |
 | RocketMQ Dashboard | `rmqdashboard` | 8082 | 控制台（`http://localhost:8082`） |
 
-```bash
-cd middleware
-docker compose up -d      # 后台启动全部中间件
-docker compose down       # 停止（保留数据卷）
-docker compose down -v    # 停止并清空数据卷（下次启动重新初始化）
-```
-
-- 首次启动（数据卷为空）时 MySQL 自动执行 `schema.sql` 初始化 `approval_flow` 数据库与种子数据（流程定义、节点配置、用户角色等），无需手动建表
-- 不使用 Docker 时请自行部署中间件，并手动执行初始化脚本：
-
-```bash
-mysql -u root -p -e "CREATE DATABASE approval_flow DEFAULT CHARACTER SET utf8mb4;"
-mysql -u root -p approval_flow < middleware/schema.sql
-```
-
-> **部署位置与 IP 调整**：compose 本身不挑平台，Windows Docker Desktop / Linux 均可一键启动。环境相关的只有两处，按部署形态调整：
+> **启动前：按部署形态调整 IP**（compose 本身不挑平台，Windows Docker Desktop / Linux 均可运行；环境相关的只有以下两处，**先改再启动**，否则 RocketMQ 收发会失败）：
 >
 > | 部署形态 | `middleware/broker.conf` 的 `brokerIP1` | `MW_HOST`（后端 dev 配置） |
 > |---------|----------------------------------------|-----------------------------------|
@@ -137,6 +122,21 @@ mysql -u root -p approval_flow < middleware/schema.sql
 > ```
 >
 > 后端启动时经 `application-dev.yml` 的 `config.import` 自动读取该文件；Docker 装本机则无需创建（默认 `127.0.0.1`）。
+
+```bash
+cd middleware
+docker compose up -d      # 后台启动全部中间件
+docker compose down       # 停止（保留数据卷）
+docker compose down -v    # 停止并清空数据卷（下次启动重新初始化）
+```
+
+- 首次启动（数据卷为空）时 MySQL 自动执行 `schema.sql` 初始化 `approval_flow` 数据库与种子数据（流程定义、节点配置、用户角色等），无需手动建表
+- 不使用 Docker 时请自行部署中间件，并手动执行初始化脚本：
+
+```bash
+mysql -u root -p -e "CREATE DATABASE approval_flow DEFAULT CHARACTER SET utf8mb4;"
+mysql -u root -p approval_flow < middleware/schema.sql
+```
 
 ### 3. 启动服务
 
@@ -207,6 +207,39 @@ ROCKETMQ_NAME_SERVER=10.0.0.14:9876 \
 java -jar target/approval-flow-backend.jar
 ```
 
+### 6. 压测与观测（可选）
+
+压测脚本与观测栈已入库，配合[《性能压测报告》](docs/性能压测报告.md)可复现全部实验。
+
+> **启动前：按后端位置调整压测目标**（k6 与 Prometheus 均默认后端与压测工具同机——全在本机则无需任何改动；后端在虚拟机 / 远程机器时，环境相关的只有以下两处，**先改再用**）：
+>
+> | 组件 | 推荐改法 |
+> |------|---------|
+> | k6（跑在宿主机） | 在运行 k6 的机器上执行一次 `echo 'export TARGET=http://<后端IP>:8080' >> ~/.bashrc`，再执行 `source ~/.bashrc`（当前终端立即生效，或重开终端），之后所有场景直接 `k6 run xxx.js` |
+> | Prometheus（跑在容器内） | `observability/prometheus.yml` 中 backend 的 targets 改为 `<后端IP>:8080`，然后 `docker compose restart prometheus` |
+>
+> 写法为何不同：k6 在宿主机读环境变量即可；Prometheus 在容器内，`localhost` 指容器自身、抓不到宿主后端，必须写后端可达地址。
+
+**启动观测栈**（需先完成第 2 步启动中间件）：
+
+```bash
+cd observability
+docker compose up -d
+```
+
+- Grafana：`http://localhost:3000`（admin / admin），预置 4 个面板（API 摘要 / JVM / MySQL-Redis / Tomcat-Hikari）
+- Prometheus：`http://localhost:9090`，默认抓取目标 `host.docker.internal:8080`（Prometheus 运行在容器内，该域名指其宿主机——后端与观测栈同机时零配置）
+
+**执行压测**（需安装 [k6](https://k6.io)）：
+
+```bash
+cd k6
+chmod +x *.sh            # 首次需要
+./seed.sh                # 造压测用户（Windows PowerShell/CMD 改用 `bash *.sh`）
+k6 run login.js          # 场景脚本：login / submit / approve / pending-list
+./cleanup.sh             # 清空压测数据
+```
+
 ## 项目结构
 
 ```
@@ -230,6 +263,8 @@ approval-flow/
 │   ├── docker-compose.yml
 │   ├── broker.conf         # RocketMQ Broker 配置（brokerIP1 按环境修改）
 │   └── schema.sql          # 建表脚本及初始数据（首次启动 MySQL 自动执行）
+├── k6/                     # k6 压测脚本与数据工具（TARGET 环境变量指定后端地址）
+├── observability/          # 观测栈编排（Prometheus + Grafana + 3 个 exporter）
 ├── start.js                # 一键启动脚本（同时启动前后端）
 ├── stop.js                 # 一键停止脚本（按端口终止进程）
 ├── LICENSE                 # MIT 许可证

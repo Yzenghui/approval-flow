@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
 @DisplayName("本地消息表扫表任务")
 class MqOutboxSchedulerTest {
 
-    private static final int BATCH_LIMIT = 100;
+    private static final int BATCH_LIMIT = 500;
 
     private MqOutboxService mqOutboxService;
     private ApprovalEventProducer approvalEventProducer;

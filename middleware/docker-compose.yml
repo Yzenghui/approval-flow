@@ -1,0 +1,82 @@
+services:
+  namesrv:
+    image: apache/rocketmq:4.9.6
+    container_name: rmqnamesrv
+    restart: unless-stopped
+    ports:
+      - "9876:9876"
+    command: sh mqnamesrv
+    networks:
+      - middleware
+
+  broker:
+    image: apache/rocketmq:4.9.6
+    container_name: rmqbroker
+    restart: unless-stopped
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+    volumes:
+      - ./broker.conf:/home/rocketmq/rocketmq-4.9.6/conf/broker.conf
+    command: sh mqbroker -c /home/rocketmq/rocketmq-4.9.6/conf/broker.conf
+    depends_on:
+      - namesrv
+    networks:
+      - middleware
+
+  dashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rmqdashboard
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - JAVA_OPTS=-Drocketmq.namesrv.addr=namesrv:9876
+    volumes:
+      - dashboard_tmp:/tmp
+    depends_on:
+      - namesrv
+    networks:
+      - middleware
+
+  mysql:
+    image: mysql:8.0
+    container_name: approval-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # 首次启动（数据卷为空）自动执行建表脚本与种子数据
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - middleware
+
+  redis:
+    image: redis:7-alpine
+    container_name: approval-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "123456"]
+    networks:
+      - middleware
+
+# 网络与卷均显式命名，与所在目录名解耦：拷贝到任意目录、任意机器 compose up 结果一致
+networks:
+  middleware:
+    name: middleware
+
+volumes:
+  dashboard_tmp:
+    name: dashboard_tmp
+  mysql_data:
+    name: mysql_data
+  redis_data:
+    name: redis_data

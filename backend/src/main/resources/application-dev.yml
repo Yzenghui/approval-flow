@@ -1,21 +1,27 @@
 # 本地开发环境：激活 dev 时生效
-# 本地库在内网，凭据不敏感，随仓库一起提交
+# 凭据不敏感，随仓库一起提交
+# 中间件地址默认本机（Docker 装本机时零配置开箱即用）；
+# 中间件在虚拟机/远程服务器时：在 backend/ 下新建 .env 文件（properties 格式，已被 .gitignore 忽略），
+# 写入一行 MW_HOST=该机器 IP，如：MW_HOST=192.168.149.128
 
 spring:
+  # 导入本地 .env（文件不存在则忽略）
+  config:
+    import: optional:file:./.env[.properties]
   datasource:
-    url: jdbc:mysql://192.168.149.128:3306/approval_flow?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MW_HOST:127.0.0.1}:3306/approval_flow?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
     username: root
     password: 123456
 
   data:
     redis:
-      host: 192.168.149.128
+      host: ${MW_HOST:127.0.0.1}
       port: 6379
       password: 123456
       database: 0
 
 rocketmq:
-  name-server: 192.168.149.128:9876
+  name-server: ${MW_HOST:127.0.0.1}:9876
 
 mybatis-plus:
   configuration:

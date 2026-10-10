@@ -83,7 +83,7 @@
 - JDK 21+
 - Node.js 20+（`start.js` 启动脚本要求）
 - MySQL 8.0+、Redis 7+、RocketMQ 4.9+（三项中间件均由 `middleware/docker-compose.yml` 一键编排，或自行部署）
-- Maven 3.8+（或直接使用项目自带的 `mvnw` 包装器，无需本机安装）
+- 无需本机 Maven（项目自带 `mvnw` 包装器，首次运行自动下载 Maven distribution）
 
 ## 快速启动（本地开发）
 
@@ -169,13 +169,28 @@ cd backend
 cd frontend
 npm install
 npm run dev
+# frontend/.env.development 已入库，默认含 Vite 代理 / API 地址，无需修改
 ```
 
 后端默认监听 `8080` 端口，前端默认监听 `5173` 端口。
 
+**启动后访问清单**：
+
+| 服务 | 地址 | 默认账号 |
+|------|------|----------|
+| 前端（推荐入口） | http://localhost:5173 | admin / Admin@123 |
+| 后端 API | http://localhost:8080 | — |
+| RocketMQ Dashboard | http://localhost:8082 | — |
+| Grafana | http://localhost:3000 | admin / admin |
+| Prometheus | http://localhost:9090 | — |
+
+> 默认账号由 `middleware/schema.sql` 种子数据创建，Admin 角色可访问用户管理、流程定义、MQ 发件箱管理等管理域。
+
 ### 4. 运行测试
 
-后端已内置 17 个测试用例，覆盖发件箱状态机、消费者幂等、调度器异常隔离、限流、并发审批等核心逻辑：
+> **先启动中间件**：测试默认走 dev profile，需要真实数据库 / Redis / MQ 环境，直接跑会因连不上而失败。
+
+后端已内置 17 个测试类 / 82 个测试方法，覆盖发件箱状态机、消费者幂等、调度器异常隔离、限流、并发审批等核心逻辑：
 
 ```bash
 cd backend

@@ -104,21 +104,33 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Actuator：暴露 health / info / metrics 等端点，作为可观测的统一入口 -->
+		<!-- Actuator：预置 health / info / metrics / env / beans 等运维端点，由配置决定暴露哪些；
+		     除指标类外，其余端点各有独立数据源，不经注册表；
+		     指标类（metrics / prometheus）输出 MeterRegistry 中的指标（仅完成注册的才会进入其中），注册来源：
+		     	- JVM：Micrometer 内置
+		     	- Tomcat：server.tomcat.mbeanregistry.enabled=true（注册 MBean）
+		     	          + management.metrics.enable.tomcat=true（采集为指标）
+		     	          （2.7+ 默认关闭 MBean 注册，两个开关缺一不可）
+		     	- HikariCP：jdbc starter 自动装配
+		     	- Logback：logging starter 自动装配
+		     	- RocketMQ / Redis：无自动集成，需手动接入 Micrometer
+		     以上指标随端点暴露后，可直接用浏览器 / curl 访问。
+
+		     RocketMQ / Redis 亦可由 exporter 从服务端侧采集，数据不经应用，仅暴露于自身端口，
+		     无法从 /actuator 访问，与手动接入的客户端视角互补，非替代关系。
+		-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
-		<!-- Prometheus registry：让 Actuator 暴露 /actuator/prometheus 端点 -->
-		<!-- 各组件指标注册来源：
-     		- JVM：Micrometer 内置
-     		- Tomcat：需 server.tomcat.mbeanregistry.enabled=true（暴露 MBean）
-                		+ management.metrics.enable.tomcat=true（采集指标）
-                		（Spring Boot 2.7+ 默认关闭 MBean 注册）
-     		- HikariCP：jdbc starter
-     		- Logback：logging starter
-     		RocketMQ / Redis 的客户端指标需单独接入 Micrometer -->
+		<!-- Prometheus Registry：提供 PrometheusMeterRegistry，使 MeterRegistry 中的指标
+		     以 Prometheus 文本格式输出，并自动创建 /actuator/prometheus 端点
+		     （classpath 有此依赖才创建，还需 management.endpoints.web.exposure.include 将其暴露）。
+		     与 /actuator/metrics 数据来源相同，仅格式不同：
+		     	- /actuator/metrics：JSON，人工排查（浏览器 / curl）
+		     	- /actuator/prometheus：Prometheus 文本，供抓取工具拉取
+		-->
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
